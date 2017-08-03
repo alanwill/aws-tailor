@@ -1,0 +1,246 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+
+    "Description": "Builds Daemon instance for connecting to NIPAP backend",
+
+    "Parameters": {
+        "AppName": {
+            "Description": "What is the name of the application? This is used to tag the resources",
+            "Type": "String",
+            "Default": "tailor",
+            "MinLength": "3",
+            "MaxLength": "25"
+        },
+        "EnvironmentName": {
+            "Description": "What is the environment type, e.g. prd/stg/dev/tst.",
+            "Type": "String",
+            "MinLength": "3",
+            "MaxLength": "5",
+            "AllowedValues": ["prd", "stg", "dev", "tst"]
+        },
+        "ApplicationSubnetAZ1": {
+            "Description": "Subnet ID for the Application subnet in AZ1",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
+        "TailorNipapDaemonInstanceType": {
+            "Description": "Daemon Instance Class",
+            "Type": "String",
+            "Default": "t2.micro",
+            "AllowedValues": ["t2.nano", "t2.micro", "t2.small", "t2.medium", "t2.large"]
+        },
+        "TailorNipapDaemonAmi": {
+            "Description": "NIPAP Daemon AMI",
+            "Type": "AWS::EC2::Image::Id"
+        },
+        "TailorComponentsSecurityGroup": {
+            "Description": "TailorComponentsSg Id from NIPAP Backend CFN Stack",
+            "Type": "AWS::EC2::SecurityGroup::Id"
+        },
+        "TailorRequestId": {
+            "Description": "Tailor requestId",
+            "Type": "String"
+        },
+        "VPCID": {
+            "Description": "VPC ID",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+
+    "Mappings": {
+        "AWSInstanceType2Arch": {
+            "t2.nano": {
+                "Arch": "HVM64"
+            },
+            "t2.micro": {
+                "Arch": "HVM64"
+            },
+            "t2.small": {
+                "Arch": "HVM64"
+            },
+            "t2.medium": {
+                "Arch": "HVM64"
+            },
+            "t2.large": {
+                "Arch": "HVM64"
+            },
+            "m3.medium": {
+                "Arch": "HVM64"
+            },
+            "m3.large": {
+                "Arch": "HVM64"
+            },
+            "m3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "m3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.large": {
+                "Arch": "HVM64"
+            },
+            "m4.xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.large": {
+                "Arch": "HVM64"
+            },
+            "c3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.large": {
+                "Arch": "HVM64"
+            },
+            "r3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "hs1.8xlarge": {
+                "Arch": "HVM64"
+            }
+        },
+        "AWSRegionArch2AMI": {
+            "us-east-1": {
+                "HVM64": ""
+            }
+        }
+    },
+
+    "Resources": {
+        "NipapDaemonInstance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "InstanceType": {
+                    "Ref": "TailorNipapDaemonInstanceType"
+                },
+                "SubnetId": {
+                    "Ref": "ApplicationSubnetAZ1"
+                },
+                "ImageId": {
+                    "Ref": "TailorNipapDaemonAmi"
+                },
+                "SecurityGroupIds": [{
+                    "Ref": "NipapDaemonSg"
+                }, {
+                    "Ref": "TailorComponentsSecurityGroup"
+                }],
+                "BlockDeviceMappings": [{
+                    "DeviceName": "/dev/sda1",
+                    "Ebs": {
+                        "VolumeSize": "8",
+                        "VolumeType": "gp2"
+                    }
+                }],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": ["", [
+                            "#!/bin/bash \n",
+                            "apt-get update -y\n",
+                            "apt-get upgrade -y\n"
+                        ]]
+                    }
+                },
+                "Tags": [{
+                    "Key": "purpose",
+                    "Value": "NIPAP Deamon Instance"
+                }, {
+                    "Key": "stack",
+                    "Value": {
+                        "Ref": "EnvironmentName"
+                    }
+                }, {
+                    "Key": "app",
+                    "Value": {
+                        "Ref": "AppName"
+                    }
+                }, {
+                    "Key": "Name",
+                    "Value": "NIPAP Daemon Instance"
+                }]
+            }
+        },
+
+        "NipapDaemonSg": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "NIPAP Deamon",
+                "VpcId": {
+                    "Ref": "VPCID"
+                },
+                "SecurityGroupIngress": [{
+                    "IpProtocol": "tcp",
+                    "FromPort": "1337",
+                    "ToPort": "1337",
+                    "SourceSecurityGroupId": {
+                        "Ref": "TailorComponentsSecurityGroup"
+                    }
+                }],
+                "Tags": [{
+                    "Key": "purpose",
+                    "Value": "NIPAP Deamon"
+                }, {
+                    "Key": "stack",
+                    "Value": {
+                        "Ref": "EnvironmentName"
+                    }
+                }, {
+                    "Key": "app",
+                    "Value": {
+                        "Ref": "AppName"
+                    }
+                }]
+            }
+        }
+    },
+
+    "Outputs": {
+        "NipapDaemonIp": {
+            "Description": "NIPAP Daemon IP address",
+            "Value": {
+                "Fn::GetAtt" : [ "NipapDaemonInstance", "PrivateIp" ]
+            }
+        },
+        "TailorRequestId": {
+            "Description": "Tailor requestId",
+            "Value": {
+                "Ref": "TailorRequestId"
+            }
+        }
+    }
+
+
+}

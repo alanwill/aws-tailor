@@ -1,0 +1,88 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Provisions Tailor ElasticSearch cluster",
+    "Parameters": {},
+    "Resources": {
+        "EsDomain": {
+            "Type": "AWS::Elasticsearch::Domain",
+            "Properties": {
+                "AccessPolicies": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "AWS": [{
+                                "Ref": "AWS::AccountId"
+                            }]
+                        },
+                        "Action": [
+                            "es:*"
+                        ],
+                        "Resource": {
+                            "Fn::Join": ["", ["arn:aws:es:us-east-1:", {
+                                "Ref": "AWS::AccountId"
+                            }, ":domain/tailor/*"]]
+                        }
+                    }, {
+                        "Effect": "Allow",
+                        "Principal": {
+                            "AWS": "*"
+                        },
+                        "Action": [
+                            "es:*"
+                        ],
+                        "Resource": {
+                            "Fn::Join": ["", ["arn:aws:es:us-east-1:", {
+                                "Ref": "AWS::AccountId"
+                            }, ":domain/tailor/*"]]
+                        },
+                        "Condition": {
+                            "IpAddress": {
+                                "aws:SourceIp": "132.188.0.0/16"
+                            }
+                        }
+                    }]
+                },
+                "AdvancedOptions": {
+                    "rest.action.multi.allow_explicit_index": "true"
+                },
+                "EBSOptions": {
+                    "EBSEnabled": true,
+                    "VolumeSize": "20",
+                    "VolumeType": "gp2"
+                },
+                "DomainName": "tailor",
+                "ElasticsearchClusterConfig": {
+                    "InstanceCount": 2,
+                    "InstanceType": "t2.small.elasticsearch",
+                    "ZoneAwarenessEnabled": true
+                },
+                "ElasticsearchVersion": "5.1",
+                "SnapshotOptions": {
+                    "AutomatedSnapshotStartHour": 0
+                },
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": "tailor-es"
+                }, {
+                    "Key": "app",
+                    "Value": "tailor"
+                }, {
+                    "Key": "stack",
+                    "Value": "prd"
+                }]
+            }
+        }
+
+    },
+    "Outputs": {
+        "ElasticsearchEndpoint": {
+            "Description": "Elasticsearch domain endpoint",
+            "Value": {
+                "Fn::GetAtt": [
+                    "EsDomain", "DomainEndpoint"
+                ]
+            }
+        }
+    }
+}

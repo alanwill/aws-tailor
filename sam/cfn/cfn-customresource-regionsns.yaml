@@ -1,0 +1,22 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Provisions Tailor's cfn-core CFN response SNS topic in all regions
+Parameters:
+    stage:
+        Type: String
+    lambdaArnTalrCresourceSns:
+        Type: String
+Resources:
+    snsTalrVpcCfnResponse:
+        Type: Custom::RegionSns
+        Properties:
+            ServiceToken: !Ref lambdaArnTalrCresourceSns
+            Stage: !Ref stage
+            TopicNamePrefix: talr-vpccfn-response
+Outputs:
+    snsTopicNameTalrVpcCfnResponse:
+        Description: SNS topic name for talr-vpccfn-response in all regions
+        Value:
+            Fn::GetAtt:
+                - snsTalrVpcCfnResponse
+                - TopicName

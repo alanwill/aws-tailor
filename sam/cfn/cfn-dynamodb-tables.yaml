@@ -1,0 +1,415 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Provisions DynamoDB tables
+Parameters:
+    stage:
+        Type: String
+Resources:
+#########
+# DynamoDB Tables
+#########
+    dynamodbTableCbInfo:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                -
+                    AttributeName: accountCbAlias
+                    AttributeType: S
+            KeySchema:
+                -
+                    AttributeName: accountCbAlias
+                    KeyType: HASH
+            ProvisionedThroughput:
+                ReadCapacityUnits: '1'
+                WriteCapacityUnits: '1'
+            TableName: !Join [ "-", [ "talr-cbInfo", !Ref stage ] ]
+    dynamodbTableAccountInfo:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                -
+                    AttributeName: accountEmailAddress
+                    AttributeType: S
+                -
+                    AttributeName: requestId
+                    AttributeType: S
+                -
+                    AttributeName: accountId
+                    AttributeType: S
+            KeySchema:
+                -
+                    AttributeName: accountEmailAddress
+                    KeyType: HASH
+            ProvisionedThroughput:
+                ReadCapacityUnits: '1'
+                WriteCapacityUnits: '1'
+            GlobalSecondaryIndexes:
+                -
+                    IndexName: gsiRequestId
+                    KeySchema:
+                        -
+                            AttributeName: requestId
+                            KeyType: HASH
+                    Projection:
+                        ProjectionType: KEYS_ONLY
+                    ProvisionedThroughput:
+                        ReadCapacityUnits: '1'
+                        WriteCapacityUnits: '1'
+                -
+                    IndexName: gsiAccountId
+                    KeySchema:
+                        -
+                            AttributeName: accountId
+                            KeyType: HASH
+                    Projection:
+                        ProjectionType: ALL
+                    ProvisionedThroughput:
+                        ReadCapacityUnits: '1'
+                        WriteCapacityUnits: '1'
+            TableName: !Join [ "-", [ "talr-accountInfo", !Ref stage ] ]
+    dynamodbTableTaskStatus:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                -
+                    AttributeName: requestId
+                    AttributeType: S
+                -
+                    AttributeName: eventTimestamp
+                    AttributeType: S
+            KeySchema:
+                -
+                    AttributeName: requestId
+                    KeyType: HASH
+                -
+                    AttributeName: eventTimestamp
+                    KeyType: RANGE
+            ProvisionedThroughput:
+                ReadCapacityUnits: '1'
+                WriteCapacityUnits: '1'
+            StreamSpecification:
+                StreamViewType: NEW_AND_OLD_IMAGES
+            TableName: !Join [ "-", [ "talr-taskStatus", !Ref stage ] ]
+    dynamodbTableNipapCfn:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                -
+                    AttributeName: nipapAlias
+                    AttributeType: S
+            KeySchema:
+                -
+                    AttributeName: nipapAlias
+                    KeyType: HASH
+            ProvisionedThroughput:
+                ReadCapacityUnits: '1'
+                WriteCapacityUnits: '1'
+            TableName: !Join [ "-", [ "talr-nipapCfn", !Ref stage ] ]
+    dynamodbTableOps:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                -
+                    AttributeName: layer
+                    AttributeType: S
+            KeySchema:
+                -
+                    AttributeName: layer
+                    KeyType: HASH
+            ProvisionedThroughput:
+                ReadCapacityUnits: '1'
+                WriteCapacityUnits: '1'
+            TableName: !Join [ "-", [ "talr-ops", !Ref stage ] ]
+    dynamodbTableDxInterface:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                -
+                    AttributeName: divisionDcRegion
+                    AttributeType: S
+                -
+                    AttributeName: vlan
+                    AttributeType: S
+            KeySchema:
+                -
+                    AttributeName: divisionDcRegion
+                    KeyType: HASH
+                -
+                    AttributeName: vlan
+                    KeyType: RANGE
+            ProvisionedThroughput:
+                ReadCapacityUnits: '1'
+                WriteCapacityUnits: '1'
+            TableName: !Join [ "-", [ "talr-dxInterface", !Ref stage ] ]
+    dynamodbTableClaStatus:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                -
+                    AttributeName: requestId
+                    AttributeType: S
+            KeySchema:
+                -
+                    AttributeName: requestId
+                    KeyType: HASH
+            ProvisionedThroughput:
+                ReadCapacityUnits: '1'
+                WriteCapacityUnits: '1'
+            TableName: !Join [ "-", [ "talr-claStatus", !Ref stage ] ]
+    dynamodbTableConfigRulesCompliance:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            AttributeDefinitions:
+                -
+                    AttributeName: accountId
+                    AttributeType: S
+                -
+                    AttributeName: pollTimestamp
+                    AttributeType: S
+            KeySchema:
+                -
+                    AttributeName: accountId
+                    KeyType: HASH
+                -
+                    AttributeName: pollTimestamp
+                    KeyType: RANGE
+            ProvisionedThroughput:
+                ReadCapacityUnits: '1'
+                WriteCapacityUnits: '1'
+            TableName: !Join [ "-", [ "talr-configRulesCompliance", !Ref stage ] ]
+
+#########
+# DynamoDB AutoScaling Role
+#########
+    dynamodbAutoscalingRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                        Effect: Allow
+                        Principal:
+                            Service:
+                                - application-autoscaling.amazonaws.com
+                        Action:
+                            - sts:AssumeRole
+            Path: "/"
+    dynamodbAutoscalingPolicy:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: dynamodbAutoscaling
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - dynamodb:DescribeTable
+                        - dynamodb:UpdateTable
+                        - cloudwatch:PutMetricAlarm
+                        - cloudwatch:DescribeAlarms
+                        - cloudwatch:GetMetricStatistics
+                        - cloudwatch:SetAlarmState
+                        - cloudwatch:DeleteAlarms
+                    Resource: "*"
+            Roles:
+                - !Ref dynamodbAutoscalingRole
+#########
+# talr-accountInfo AutoScaling Policy
+#########
+    autoscaleTargetTableAccountInfoTableReadCapacity:
+        Type: AWS::ApplicationAutoScaling::ScalableTarget
+        Properties:
+            MaxCapacity: 10
+            MinCapacity: 1
+            ResourceId: !Sub table/${dynamodbTableAccountInfo}
+            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
+            ScalableDimension: dynamodb:table:ReadCapacityUnits
+            ServiceNamespace: dynamodb
+    autoscaleTargetTableAccountInfoTableWriteCapacity:
+        Type: AWS::ApplicationAutoScaling::ScalableTarget
+        Properties:
+            MaxCapacity: 10
+            MinCapacity: 1
+            ResourceId: !Sub table/${dynamodbTableAccountInfo}
+            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
+            ScalableDimension: dynamodb:table:WriteCapacityUnits
+            ServiceNamespace: dynamodb
+    autoscaleTargetTableAccountInfoIndexGsiRequestIdReadCapacity:
+        Type: AWS::ApplicationAutoScaling::ScalableTarget
+        Properties:
+            MaxCapacity: 10
+            MinCapacity: 1
+            ResourceId: !Sub table/${dynamodbTableAccountInfo}/index/gsiRequestId
+            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
+            ScalableDimension: dynamodb:index:ReadCapacityUnits
+            ServiceNamespace: dynamodb
+    autoscaleTargetTableAccountInfoIndexGsiRequestIdWriteCapacity:
+        Type: AWS::ApplicationAutoScaling::ScalableTarget
+        Properties:
+            MaxCapacity: 10
+            MinCapacity: 1
+            ResourceId: !Sub table/${dynamodbTableAccountInfo}/index/gsiRequestId
+            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
+            ScalableDimension: dynamodb:index:WriteCapacityUnits
+            ServiceNamespace: dynamodb
+    autoscaleTargetTableAccountInfoIndexGsiAccountIdReadCapacity:
+        Type: AWS::ApplicationAutoScaling::ScalableTarget
+        Properties:
+            MaxCapacity: 10
+            MinCapacity: 1
+            ResourceId: !Sub table/${dynamodbTableAccountInfo}/index/gsiAccountId
+            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
+            ScalableDimension: dynamodb:index:ReadCapacityUnits
+            ServiceNamespace: dynamodb
+    autoscaleTargetTableAccountInfoIndexGsiAccountIdWriteCapacity:
+        Type: AWS::ApplicationAutoScaling::ScalableTarget
+        Properties:
+            MaxCapacity: 10
+            MinCapacity: 1
+            ResourceId: !Sub table/${dynamodbTableAccountInfo}/index/gsiAccountId
+            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
+            ScalableDimension: dynamodb:index:WriteCapacityUnits
+            ServiceNamespace: dynamodb
+    scalingPolicyTableAccountInfoTableReadCapacity:
+        Type : AWS::ApplicationAutoScaling::ScalingPolicy
+        Properties:
+            PolicyName: ReadAutoScalingPolicy
+            PolicyType: TargetTrackingScaling
+            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoTableReadCapacity
+            TargetTrackingScalingPolicyConfiguration:
+                PredefinedMetricSpecification:
+                  PredefinedMetricType: DynamoDBReadCapacityUtilization
+                ScaleInCooldown: 60
+                ScaleOutCooldown: 60
+                TargetValue: 50.0
+    scalingPolicyTableAccountInfoTableWriteCapacity:
+        Type : AWS::ApplicationAutoScaling::ScalingPolicy
+        Properties:
+            PolicyName: WriteAutoScalingPolicy
+            PolicyType: TargetTrackingScaling
+            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoTableWriteCapacity
+            TargetTrackingScalingPolicyConfiguration:
+                PredefinedMetricSpecification:
+                  PredefinedMetricType: DynamoDBWriteCapacityUtilization
+                ScaleInCooldown: 60
+                ScaleOutCooldown: 60
+                TargetValue: 50.0
+    scalingPolicyTableAccountInfoGsiRequestIdWriteCapacity:
+        Type : AWS::ApplicationAutoScaling::ScalingPolicy
+        Properties:
+            PolicyName: WriteAutoScalingPolicyGsiRequestId
+            PolicyType: TargetTrackingScaling
+            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoIndexGsiRequestIdWriteCapacity
+            TargetTrackingScalingPolicyConfiguration:
+                PredefinedMetricSpecification:
+                  PredefinedMetricType: DynamoDBWriteCapacityUtilization
+                ScaleInCooldown: 60
+                ScaleOutCooldown: 60
+                TargetValue: 50.0
+    scalingPolicyTableAccountInfoGsiRequestIdReadCapacity:
+        Type : AWS::ApplicationAutoScaling::ScalingPolicy
+        Properties:
+            PolicyName: ReadAutoScalingPolicyGsiRequestId
+            PolicyType: TargetTrackingScaling
+            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoIndexGsiRequestIdReadCapacity
+            TargetTrackingScalingPolicyConfiguration:
+                PredefinedMetricSpecification:
+                  PredefinedMetricType: DynamoDBReadCapacityUtilization
+                ScaleInCooldown: 60
+                ScaleOutCooldown: 60
+                TargetValue: 50.0
+    scalingPolicyTableAccountInfoGsiAccountIdWriteCapacity:
+        Type : AWS::ApplicationAutoScaling::ScalingPolicy
+        Properties:
+            PolicyName: WriteAutoScalingPolicyGsiAccountId
+            PolicyType: TargetTrackingScaling
+            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoIndexGsiAccountIdWriteCapacity
+            TargetTrackingScalingPolicyConfiguration:
+                PredefinedMetricSpecification:
+                  PredefinedMetricType: DynamoDBWriteCapacityUtilization
+                ScaleInCooldown: 60
+                ScaleOutCooldown: 60
+                TargetValue: 50.0
+    scalingPolicyTableAccountInfoGsiAccountIdReadCapacity:
+        Type : AWS::ApplicationAutoScaling::ScalingPolicy
+        Properties:
+            PolicyName: ReadAutoScalingPolicyGsiAccountId
+            PolicyType: TargetTrackingScaling
+            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoIndexGsiAccountIdReadCapacity
+            TargetTrackingScalingPolicyConfiguration:
+                PredefinedMetricSpecification:
+                  PredefinedMetricType: DynamoDBReadCapacityUtilization
+                ScaleInCooldown: 60
+                ScaleOutCooldown: 60
+                TargetValue: 50.0
+    autoscaleTargetTableTaskStatusTableReadCapacity:
+        Type: AWS::ApplicationAutoScaling::ScalableTarget
+        Properties:
+            MaxCapacity: 10
+            MinCapacity: 1
+            ResourceId: !Sub table/${dynamodbTableTaskStatus}
+            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
+            ScalableDimension: dynamodb:table:ReadCapacityUnits
+            ServiceNamespace: dynamodb
+    autoscaleTargetTableTaskStatusTableWriteCapacity:
+        Type: AWS::ApplicationAutoScaling::ScalableTarget
+        Properties:
+            MaxCapacity: 10
+            MinCapacity: 1
+            ResourceId: !Sub table/${dynamodbTableTaskStatus}
+            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
+            ScalableDimension: dynamodb:table:WriteCapacityUnits
+            ServiceNamespace: dynamodb
+    scalingPolicyTableTaskStatusTableReadCapacity:
+        Type : AWS::ApplicationAutoScaling::ScalingPolicy
+        Properties:
+            PolicyName: ReadAutoScalingPolicy
+            PolicyType: TargetTrackingScaling
+            ScalingTargetId: !Ref autoscaleTargetTableTaskStatusTableReadCapacity
+            TargetTrackingScalingPolicyConfiguration:
+                PredefinedMetricSpecification:
+                  PredefinedMetricType: DynamoDBReadCapacityUtilization
+                ScaleInCooldown: 60
+                ScaleOutCooldown: 60
+                TargetValue: 50.0
+    scalingPolicyTableTaskStatusTableWriteCapacity:
+        Type : AWS::ApplicationAutoScaling::ScalingPolicy
+        Properties:
+            PolicyName: WriteAutoScalingPolicy
+            PolicyType: TargetTrackingScaling
+            ScalingTargetId: !Ref autoscaleTargetTableTaskStatusTableWriteCapacity
+            TargetTrackingScalingPolicyConfiguration:
+                PredefinedMetricSpecification:
+                  PredefinedMetricType: DynamoDBWriteCapacityUtilization
+                ScaleInCooldown: 60
+                ScaleOutCooldown: 60
+                TargetValue: 50.0
+Outputs:
+    dynamodbTableNameTalrCbInfo:
+        Description: talr-cbInfo DynamoDB table name
+        Value: !Ref dynamodbTableCbInfo
+    dynamodbTableNameTalrAccountInfo:
+        Description: talr-accountInfo DynamoDB table name
+        Value: !Ref dynamodbTableAccountInfo
+    dynamodbTableNameTalrTaskStatus:
+        Description: talr-taskStatus DynamoDB table name
+        Value: !Ref dynamodbTableTaskStatus
+    dynamodbTableNameTalrNipapCfn:
+        Description: talr-nipapCfn DynamoDB table name
+        Value: !Ref dynamodbTableNipapCfn
+    dynamodbTableNameTalrOps:
+        Description: talr-ops DynamoDB table name
+        Value: !Ref dynamodbTableOps
+    dynamodbTableNameTalrClaStatus:
+        Description: talr-claStatus DynamoDB table name
+        Value: !Ref dynamodbTableClaStatus
+    dynamodbTableNameTalrConfigRulesCompliance:
+        Description: talr-configRulesCompliance DynamoDB table name
+        Value: !Ref dynamodbTableConfigRulesCompliance
+    dynamodbTableNameTalrDxInterface:
+        Description: talr-dxInterface DynamoDB table name
+        Value: !Ref dynamodbTableDxInterface
+    dynamodbStreamsTalrTaskStatus:
+        Description: talr-taskStatus DynamoDB stream name
+        Value: !GetAtt dynamodbTableTaskStatus.StreamArn

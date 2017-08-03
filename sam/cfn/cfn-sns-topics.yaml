@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Provisions Tailor SNS topics
+Parameters:
+    stage:
+        Type: String
+Resources:
+  snsTalrOpsNotifications:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Join [ "-", [ "talr-ops-notifications", !Ref stage ] ]
+      TopicName: !Join [ "-", [ "talr-ops-notifications", !Ref stage ] ]
+  snsTalrClaRequest:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Join [ "-", [ "talr-cla-request", !Ref stage ] ]
+      TopicName: !Join [ "-", [ "talr-cla-request", !Ref stage ] ]
+  snsTalrClaResponse:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Join [ "-", [ "talr-cla-response", !Ref stage ] ]
+      TopicName: !Join [ "-", [ "talr-cla-response", !Ref stage ] ]
+  snsTalrVpcCfnResponse:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Join [ "-", [ "talr-vpccfn-response", !Ref stage ] ]
+      TopicName: !Join [ "-", [ "talr-vpccfn-response", !Ref stage ] ]
+  snsPolicyTalrVpcCfnResponse:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: SnsTopicPolicyTalrVpcCfnResponse
+        Version: '2012-10-17'
+        Statement:
+        - Sid: All_Linked_Accounts_Publish_Access
+          Effect: Allow
+          Principal:
+            AWS: '*'
+          Action: sns:Publish
+          Resource: !Ref 'snsTalrVpcCfnResponse'
+      Topics:
+      - !Ref 'snsTalrVpcCfnResponse'
+  snsTalrNipapCfnResponse:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Join [ "-", [ "talr-nipapcfn-response", !Ref stage ] ]
+      TopicName: !Join [ "-", [ "talr-nipapcfn-response", !Ref stage ] ]
+  snsTalrDispatchRequest:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Join [ "-", [ "talr-dispatch-request", !Ref stage ] ]
+      TopicName: !Join [ "-", [ "talr-dispatch-request", !Ref stage ] ]
+  snsTalrNotifyRequest:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Join [ "-", [ "talr-notify-request", !Ref stage ] ]
+      TopicName: !Join [ "-", [ "talr-notify-request", !Ref stage ] ]
+  snsTalrEventsPush:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Join [ "-", [ "talr-events-push", !Ref stage ] ]
+      TopicName: !Join [ "-", [ "talr-events-push", !Ref stage ] ]
+Outputs:
+  snsTopicNameTalrOpsNotifications:
+    Description: SNS topic name for talr-ops-notifications
+    Value: !GetAtt [snsTalrOpsNotifications, TopicName]
+  snsArnTalrOpsNotifications:
+    Description: SNS Arn for talr-ops-notifications
+    Value: !Ref 'snsTalrOpsNotifications'
+  snsTopicNameTalrClaRequest:
+    Description: SNS topic name for talr-cla-request
+    Value: !GetAtt [snsTalrClaRequest, TopicName]
+  snsArnTalrClaRequest:
+    Description: SNS Arn for talr-cla-request
+    Value: !Ref 'snsTalrClaRequest'
+  snsTopicNameTalrClaResponse:
+    Description: SNS topic name for talr-cla-response
+    Value: !GetAtt [snsTalrClaResponse, TopicName]
+  snsArnTalrClaResponse:
+    Description: SNS Arn for talr-cla-response
+    Value: !Ref 'snsTalrClaResponse'
+  snsTopicNameTalrVpcCfnResponse:
+    Description: SNS topic name for talr-vpccfn-response
+    Value: !GetAtt [snsTalrVpcCfnResponse, TopicName]
+  snsArnTalrVpcCfnResponse:
+    Description: SNS Arn for talr-vpccfn-response
+    Value: !Ref 'snsTalrVpcCfnResponse'
+  snsTopicNameTalrNipapCfnResponse:
+    Description: SNS topic name for talr-nipapcfn-response
+    Value: !GetAtt [snsTalrNipapCfnResponse, TopicName]
+  snsArnTalrNipapCfnResponse:
+    Description: SNS Arn for talr-nipapcfn-response
+    Value: !Ref 'snsTalrNipapCfnResponse'
+  snsTopicNameTalrDispatchRequest:
+    Description: SNS topic name for talr-dispatch-request
+    Value: !GetAtt [snsTalrDispatchRequest, TopicName]
+  snsArnTalrDispatchRequest:
+    Description: SNS Arn for talr-dispatch-request
+    Value: !Ref 'snsTalrDispatchRequest'
+  snsTopicNameTalrNotifyRequest:
+    Description: SNS topic name for talr-notify-request
+    Value: !GetAtt [snsTalrNotifyRequest, TopicName]
+  snsArnTalrNotifyRequest:
+    Description: SNS Arn for talr-notify-request
+    Value: !Ref 'snsTalrNotifyRequest'
+  snsTopicNameTalrEventsPush:
+    Description: SNS topic name for talr-events-push
+    Value: !GetAtt [snsTalrEventsPush, TopicName]
+  snsArnTalrEventsPush:
+    Description: SNS Arn for talr-events-push
+    Value: !Ref 'snsTalrEventsPush'

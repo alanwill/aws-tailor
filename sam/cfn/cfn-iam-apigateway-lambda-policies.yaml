@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Provisions Tailor API Gateway Lambda policies
+Parameters:
+    apiGateway:
+        Type: String
+    talrInquirerFunction:
+        Type: String
+    talrReceptionistFunction:
+        Type: String
+    talrAccountupdateConfigrulesFunction:
+        Type: String
+    talrRequeststatusFunction:
+        Type: String
+    talrAccountupdateVpcflowlogsFunction:
+        Type: String
+    talrAccountupdateVpcdnsFunction:
+        Type: String
+    talrAccountupdateMetadataFunction:
+        Type: String
+    talrAccountupdateCloudabilityFunction:
+        Type: String
+    talrAccountupdateConfigFunction:
+        Type: String
+    talrAccountupdateCloudtrailFunction:
+        Type: String
+Resources:
+    talrInquirerFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrInquirerFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/GET/accounts"
+    talrInquirerFunctionPermission2:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrInquirerFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/GET/accounts/ids"
+    talrReceptionistFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrReceptionistFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/POST/accounts"
+    talrAccountupdateConfigrulesFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrAccountupdateConfigrulesFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/PUT/configrules"
+    talrRequeststatusFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrRequeststatusFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/GET/requeststatus/*"
+    talrAccountupdateVpcflowlogsFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrAccountupdateVpcflowlogsFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/PUT/vpcflowlogs"
+    talrAccountupdateVpcdnsFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrAccountupdateVpcdnsFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/PUT/vpcdns"
+    talrAccountupdateCloudabilityFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrAccountupdateCloudabilityFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/PUT/cloudability/*"
+    talrAccountupdateMetadataFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrAccountupdateMetadataFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/PUT/accounts/*"
+    talrAccountupdateConfigFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrAccountupdateConfigFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/PUT/config/*"
+    talrAccountupdateCloudtrailFunctionPermission1:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref talrAccountupdateCloudtrailFunction
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiGateway}/*/PUT/cloudtrail/*"

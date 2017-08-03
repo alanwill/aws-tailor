@@ -1,0 +1,32 @@
+version: 0.2
+
+phases:
+    install:
+        commands:
+            # Purely informational
+            - aws --version
+            # Upgrade pip
+            - pip install --upgrade pip
+            # Upgrade to the latest version of awscli because the one bundled with
+            # the CodeBuild image has a bug that prevents SAM templates from
+            # packaging correctly.
+            - pip install --upgrade awscli
+    pre_build:
+        commands:
+            # Loop through directory structure and pip install all function libraries
+            # as specified in their respective requirements.txt
+            - for dir in sam/functions/*; do echo "$dir"; if [ -f "$dir"/requirements.txt ]; then (pip install -t "$dir"/vendored/ -r "$dir"/requirements.txt); fi; done
+            # Inject the account number and region into the Swagger file
+            - sed -i -e 's/<ACCOUNT_NUMBER>/'"$AWS_ACCOUNT_NUMBER"'/g' sam/api/swagger.yaml
+            - sed -i -e 's/<ACCOUNT_REGION>/'"$AWS_DEFAULT_REGION"'/g' sam/api/swagger.yaml
+            # Package SAM template
+            - aws cloudformation package --template-file $SAM_INPUT_FILE --s3-bucket $S3_BUCKET --s3-prefix $STAGE_NAME/deploy --output-template-file sam-output.yaml
+            # Upload output template to S3. This is being done to overcome the 51kb limit of
+            # CFN for create stack operations on templates not in S3
+            - aws s3 cp sam-output.yaml s3://$S3_BUCKET/$STAGE_NAME/config/sam-output.yaml
+            # Download CFN parameter file
+            - aws s3 cp s3://$S3_BUCKET/$STAGE_NAME/config/cfn-config.json .
+    build:
+        commands:
+            # Create CFN change set
+            - aws cloudformation create-change-set --template-url https://$S3_BUCKET.s3.amazonaws.com/$STAGE_NAME/config/sam-output.yaml --parameters file://cfn-config.json --role-arn arn:aws:iam::$AWS_ACCOUNT_NUMBER:role/$CFN_ROLE --change-set-name tailor-$STAGE_NAME-ChangeSet --stack-name tailor-$STAGE_NAME --capabilities CAPABILITY_IAM

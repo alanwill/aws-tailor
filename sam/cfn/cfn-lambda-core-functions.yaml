@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Provisions Lambda core functions
+Parameters:
+    stage:
+        Type: String
+Resources:
+    talrReceptionistFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: talr-receptionist1
+            Description: Validates account request and starts workflow
+            Runtime: python2.7
+            CodeUri: ../functions/talr-receptionist
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 30
+            Role: !GetAtt iamCoreFunctionsRolesStack.Outputs.iamRoleArnLambdaTalrReceptionist
+        Variables:
+            TALR_TABLENAME_CBINFO: !GetAtt dynamodbTablesStack.Outputs.dynamodbTableNameTalrCbInfo
+            TALR_TABLENAME_TASKSTATUS: !GetAtt dynamodbTablesStack.Outputs.dynamodbTableNameTalrTaskStatus
+            TALR_TABLENAME_ACCOUNTINFO: !GetAtt dynamodbTablesStack.Outputs.dynamodbTableNameTalrAccountInfo
+            STAGE: !Ref stage

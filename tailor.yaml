@@ -1,0 +1,1333 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Main Tailor service stack
+Parameters:
+    stage:
+        Type: String
+        AllowedValues:
+          - alpha
+          - beta
+          - prod
+        Description: Enter alpha, beta or prod to designate the deployment stage/environment
+    kmsKeyId:
+        Type: String
+        Description: Enter the key Id of the KMS master key
+    s3Bucket:
+        Type: String
+        Description: Enter the name of the S3 bucket that contains the Tailor artifacts
+    notifyEmail:
+        Type: String
+        Description: Enter the SendFrom email address that Tailor should use when sending notifications to users.
+    apiDomainName:
+        Type: String
+        Description: Enter the name of the API Gateway FQDN for the Tailor API e.g. tailor.mycompany.com
+    applicationSubnetIds:
+        Type: List<AWS::EC2::Subnet::Id>
+        Description: Enter 2-3 Application Subnet Ids
+    vpcId:
+        Type: AWS::EC2::VPC::Id
+        Description: Enter the VPC ID that should be used for this stack
+Resources:
+###
+# Nested Stacks
+###
+
+    dynamodbTablesStack:
+        Type: "AWS::CloudFormation::Stack"
+        Properties:
+            TemplateURL: ./sam/cfn/cfn-dynamodb-tables.yaml
+            Parameters:
+                stage: !Ref stage
+            TimeoutInMinutes: 15
+    cloudwatchAlarmsStack:
+        Type: "AWS::CloudFormation::Stack"
+        Properties:
+            TemplateURL: ./sam/cfn/cfn-cloudwatch-alarms.yaml
+            Parameters:
+                stage: !Ref stage
+                snsArnTalrOpsNotifications:
+                    Fn::GetAtt:
+                        - snsTopicsStack
+                        - Outputs.snsArnTalrOpsNotifications
+            TimeoutInMinutes: 15
+    snsTopicsStack:
+        Type: "AWS::CloudFormation::Stack"
+        Properties:
+            TemplateURL: ./sam/cfn/cfn-sns-topics.yaml
+            Parameters:
+                stage: !Ref stage
+            TimeoutInMinutes: 15
+    customresourceRegionSnsStack:
+        Type: "AWS::CloudFormation::Stack"
+        Properties:
+            TemplateURL: ./sam/cfn/cfn-customresource-regionsns.yaml
+            Parameters:
+                stage: !Ref stage
+                lambdaArnTalrCresourceSns: !GetAtt talrCresourceSNSFunction.Arn
+            TimeoutInMinutes: 15
+    iamApigatewayLambdaPoliciesStack:
+        Type: "AWS::CloudFormation::Stack"
+        Properties:
+            TemplateURL: ./sam/cfn/cfn-iam-apigateway-lambda-policies.yaml
+            Parameters:
+                apiGateway: !Ref tailorApiGateway
+                talrInquirerFunction: !Ref talrInquirerFunction
+                talrReceptionistFunction: !Ref talrReceptionistFunction
+                talrAccountupdateConfigrulesFunction: !Ref talrAccountupdateConfigrulesFunction
+                talrRequeststatusFunction: !Ref talrRequeststatusFunction
+                talrAccountupdateVpcflowlogsFunction: !Ref talrAccountupdateVpcflowlogsFunction
+                talrAccountupdateVpcdnsFunction: !Ref talrAccountupdateVpcdnsFunction
+                talrAccountupdateCloudabilityFunction: !Ref talrAccountupdateCloudabilityFunction
+                talrAccountupdateCloudtrailFunction: !Ref talrAccountupdateCloudtrailFunction
+                talrAccountupdateConfigFunction: !Ref talrAccountupdateConfigFunction
+                talrAccountupdateMetadataFunction: !Ref talrAccountupdateMetadataFunction
+            TimeoutInMinutes: 15
+    iamCoreFunctionsRolesStack:
+        Type: "AWS::CloudFormation::Stack"
+        Properties:
+            TemplateURL: ./sam/cfn/cfn-iam-core-functions-roles.yaml
+            Parameters:
+                stage: !Ref stage
+                s3Bucket: !Ref s3Bucket
+                notifyEmail: !Ref notifyEmail
+                kmsKeyId: !Ref kmsKeyId
+                dynamodbTableNameTalrCbInfo:
+                    Fn::GetAtt:
+                        - dynamodbTablesStack
+                        - Outputs.dynamodbTableNameTalrCbInfo
+                dynamodbTableNameTalrTaskStatus:
+                    Fn::GetAtt:
+                        - dynamodbTablesStack
+                        - Outputs.dynamodbTableNameTalrTaskStatus
+                dynamodbTableNameTalrAccountInfo:
+                    Fn::GetAtt:
+                        - dynamodbTablesStack
+                        - Outputs.dynamodbTableNameTalrAccountInfo
+                dynamodbTableNameTalrConfigRulesCompliance:
+                    Fn::GetAtt:
+                        - dynamodbTablesStack
+                        - Outputs.dynamodbTableNameTalrConfigRulesCompliance
+                dynamodbTableNameTalrDxInterface:
+                    Fn::GetAtt:
+                        - dynamodbTablesStack
+                        - Outputs.dynamodbTableNameTalrDxInterface
+                dynamodbTableNameTalrNipapCfn:
+                    Fn::GetAtt:
+                        - dynamodbTablesStack
+                        - Outputs.dynamodbTableNameTalrNipapCfn
+                dynamodbTableNameTalrOps:
+                    Fn::GetAtt:
+                        - dynamodbTablesStack
+                        - Outputs.dynamodbTableNameTalrOps
+                dynamodbTableNameTalrClaStatus:
+                    Fn::GetAtt:
+                        - dynamodbTablesStack
+                        - Outputs.dynamodbTableNameTalrClaStatus
+                dynamodbStreamsTalrTaskStatus:
+                    Fn::GetAtt:
+                        - dynamodbTablesStack
+                        - Outputs.dynamodbStreamsTalrTaskStatus
+                dynamodbStreamsTalrAdsecgroup:
+                    Fn::ImportValue:
+                        !Sub "talr-${stage}-dynamodbStreamsTalrAdsecgroup"
+                dynamodbTableNameTalrAdsecgroup:
+                    Fn::ImportValue:
+                        !Sub "talr-${stage}-dynamodbTableNameTalrAdsecgroup"
+                snsTopicNameTalrClaRequest:
+                    Fn::GetAtt:
+                        - snsTopicsStack
+                        - Outputs.snsTopicNameTalrClaRequest
+                snsTopicNameTalrDispatchRequest:
+                    Fn::GetAtt:
+                        - snsTopicsStack
+                        - Outputs.snsTopicNameTalrDispatchRequest
+                snsTopicNameTalrNipapCfnResponse:
+                    Fn::GetAtt:
+                        - snsTopicsStack
+                        - Outputs.snsTopicNameTalrNipapCfnResponse
+                snsTopicNameTalrEventsPush:
+                    Fn::GetAtt:
+                        - snsTopicsStack
+                        - Outputs.snsTopicNameTalrEventsPush
+                snsTopicNameTalrNotifyRequest:
+                    Fn::GetAtt:
+                        - snsTopicsStack
+                        - Outputs.snsTopicNameTalrNotifyRequest
+                snsTopicNameTalrVpcCfnResponse:
+                    Fn::GetAtt:
+                        - snsTopicsStack
+                        - Outputs.snsTopicNameTalrVpcCfnResponse
+                snsTopicNameTalrClaResponse:
+                    Fn::GetAtt:
+                        - snsTopicsStack
+                        - Outputs.snsTopicNameTalrClaResponse
+            TimeoutInMinutes: 15
+#    lambdaCoreFunctionsStack:
+#        Type: "AWS::CloudFormation::Stack"
+#        Properties:
+#            TemplateURL: ./cfn/cfn-lambda-core-functions.yaml
+#            Parameters:
+#                stage: !Ref stage
+#            TimeoutInMinutes: 30
+
+###
+# API Gateway
+###
+
+    tailorApiGateway:
+        Type: AWS::Serverless::Api
+        Properties:
+            Name: !Sub tailor-${stage}
+            StageName: !Ref stage
+            DefinitionUri: ./sam/api/swagger.yaml
+            Variables:
+                stage: !Ref stage
+                accountId: !Ref AWS::AccountId
+                accountRegion: !Ref AWS::Region
+                apiDomainName: !Ref apiDomainName
+
+    tailorApiCertificate:
+        Type: AWS::CertificateManager::Certificate
+        Properties:
+            DomainName: !Ref apiDomainName
+
+    tailorApiDomain:
+        Type: "AWS::ApiGateway::DomainName"
+        Properties:
+            CertificateArn: !Ref tailorApiCertificate
+            DomainName: !Ref apiDomainName
+
+    tailorApiBasepathmapping:
+        Type: "AWS::ApiGateway::BasePathMapping"
+        DependsOn: tailorApiGateway
+        Properties:
+            DomainName: !Ref tailorApiDomain
+            RestApiId: !Ref tailorApiGateway
+            Stage: !Ref stage
+
+###
+# Lambda functions
+###
+
+    talrReceptionistFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-receptionist", !Ref stage ] ]
+            Description: Validates account request and starts workflow
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-receptionist
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 30
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrReceptionist
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+                    TAILOR_SNSARN_CLAREQUEST:
+                        Fn::GetAtt:
+                            - snsTopicsStack
+                            - Outputs.snsArnTalrClaRequest
+    talrAccountupdateConfigrulesFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-accountupdate-configrules", !Ref stage ] ]
+            Description: Processes payload requests for Config Rules (and Config) account updates
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-accountupdate-configrules
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrAccountUpdateConfigRules
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrAccountupdateVpcflowlogsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-accountupdate-vpcflowlogs", !Ref stage ] ]
+            Description: Processes payload requests for VPC Flow Logs account updates
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-accountupdate-vpcflowlogs
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrAccountUpdateVpcflowlogs
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrAccountupdateVpcdnsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-accountupdate-vpcdns", !Ref stage ] ]
+            Description: Processes payload requests for VPC DNS enablement
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-accountupdate-vpcdns
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrAccountUpdateVpcdns
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrAccountupdateCloudtrailFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-accountupdate-cloudtrail", !Ref stage ] ]
+            Description: Processes payload requests for Cloudtrail enablement
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-accountupdate-cloudtrail
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrAccountUpdateCloudtrail
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrAccountupdateConfigFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-accountupdate-config", !Ref stage ] ]
+            Description: Processes payload requests for AWS Config enablement
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-accountupdate-config
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrAccountUpdateConfig
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrAccountupdateCloudabilityFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-accountupdate-cloudability", !Ref stage ] ]
+            Description: Processes payload requests for Cloudability enablement
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-accountupdate-cloudability
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrAccountUpdateCloudability
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrAccountupdateMetadataFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-accountupdate-metadata", !Ref stage ] ]
+            Description: Update API for Tailor account metadata
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-accountupdate-metadata
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrAccountUpdateMetadata
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrClaFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-cla", !Ref stage ] ]
+            Description: Invokes CLA call to create account
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-cla
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrCla
+            Events:
+                talrClaRequest:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrClaRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_CLASTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrClaStatus
+    talrEntsupportFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-entsupport", !Ref stage ] ]
+            Description: Creates support case requesting Enterprise Support enablement
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-entsupport
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrEntsupport
+            Events:
+                talrDispatchRequest:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrDispatchRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrCloudabilityFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-cloudability", !Ref stage ] ]
+            Description: Provisions account in Cloudability
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-cloudability
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 300
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrCloudability
+            Events:
+                talrDispatchRequest:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrDispatchRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrCloudtrailFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-cloudtrail", !Ref stage ] ]
+            Description: Configures AWS Cloudtrail service
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-cloudtrail
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrCloudtrail
+            Events:
+                talrDispatchRequest:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrDispatchRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrConfigFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-config", !Ref stage ] ]
+            Description: Configures AWS Config service
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-config
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 180
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrConfig
+            Events:
+                talrDispatchRequest:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrDispatchRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrConfigComplianceaggregatorFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-config-complianceaggregator", !Ref stage ] ]
+            Description: Config rules compliance aggregator
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-config-complianceaggregator
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 300
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrConfigComplianceAggregator
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrConfigDeployrulefunctionsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-config-deployrulefunctions", !Ref stage ] ]
+            Description: Deploys Lambda functions for custom Config Rules
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-config-deployrulefunctions
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 300
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrConfigDeploRuleFunctions
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    # talrConfigruleEc2noteinpublicsubnetFunction:
+    #     Type: AWS::Serverless::Function
+    #     Properties:
+    #         FunctionName: !Join [ "-", [ "talr-configrule-ec2notinpublicsubnet", !Ref stage ] ]
+    #         Description: Config Rule EC2 not in Pubic subnet
+    #         Runtime: python2.7
+    #         CodeUri: ./sam/functions/talr-configrule-ec2notinpublicsubnet
+    #         Handler: handler.handler
+    #         MemorySize: 128
+    #         Timeout: 300
+    #         Role:
+    #             Fn::GetAtt:
+    #                 - iamCoreFunctionsRolesStack
+    #                 - Outputs.iamRoleArnLambdaTalrConfigRuleEc2NotInPublicSubnet
+    #         Environment:
+    #             Variables:
+    #                 TAILOR_TABLENAME_CBINFO:
+    #                     Fn::GetAtt:
+    #                         - dynamodbTablesStack
+    #                         - Outputs.dynamodbTableNameTalrCbInfo
+    #                 TAILOR_TABLENAME_ACCOUNTINFO:
+    #                     Fn::GetAtt:
+    #                         - dynamodbTablesStack
+    #                         - Outputs.dynamodbTableNameTalrAccountInfo
+    talrCresourceSNSFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-cresource-sns", !Ref stage ] ]
+            Description: CFN Custom Resource Creates an SNS topic in the region specified.
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-cresource-sns
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrCresourceSns
+    talrDirectconnectFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-directconnect", !Ref stage ] ]
+            Description: Configures AWS Direct Connect
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-directconnect
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 120
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrDirectconnect
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+                    TAILOR_TABLENAME_DXINTERFACE:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrDxInterface
+    talrDirectorFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-director", !Ref stage ] ]
+            Description: Validates CLA completed successfully then invokes parallel service setup
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-director
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrDirector
+            Events:
+                talrClaResponse:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrClaResponse
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+                    TAILOR_SNSARN_DISPATCH_REQUEST:
+                        Fn::GetAtt:
+                            - snsTopicsStack
+                            - Outputs.snsArnTalrDispatchRequest
+    talrIamFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-iam", !Ref stage ] ]
+            Description: Configures AWS IAM service
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-iam
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrIam
+            Events:
+                talrDispatchRequest:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrDispatchRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrInquirerFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-inquirer", !Ref stage ] ]
+            Description: Lookup account info by requestId, emailId or accountId
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-inquirer
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrInquirer
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrLexAccountrequestFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-lex-accountrequest", !Ref stage ] ]
+            Description: Lex bot for account requests
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-lex-accountrequest
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrLexAccountRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrNipapFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-nipap", !Ref stage ] ]
+            Description: Launches the NIPAP daemon for talr-vpc
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-nipap
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrNipap
+            Events:
+                talrDispatchRequest:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrDispatchRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+                    TAILOR_TABLENAME_NIPAPCFN:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrNipapCfn
+                    TAILOR_SNSARN_NIPAPCFN_RESPONSE:
+                        Fn::GetAtt:
+                            - snsTopicsStack
+                            - Outputs.snsArnTalrNipapCfnResponse
+    talrNotifyFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-notify", !Ref stage ] ]
+            Description: Creates SNOW request to provision AD distribution list
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-notify
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrNotify
+            Events:
+                talrNotifyRequest:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrNotifyRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    # talrOpsDdbBackupsFunction:
+    #     Type: AWS::Serverless::Function
+    #     Properties:
+    #         FunctionName: !Join [ "-", [ "talr-ops-ddb-backups", !Ref stage ] ]
+    #         Description: Backs up Tailor's DDB tables
+    #         Runtime: python2.7
+    #         CodeUri: ./sam/functions/talr-ops-ddb-backups
+    #         Handler: handler.handler
+    #         MemorySize: 128
+    #         Timeout: 60
+    #         Role:
+    #             Fn::GetAtt:
+    #                 - iamCoreFunctionsRolesStack
+    #                 - Outputs.iamRoleArnLambdaTalrOpsDdbBackup
+    #         Environment:
+    #             Variables:
+    #                 TAILOR_TABLENAME_OPS:
+    #                     Fn::GetAtt:
+    #                         - dynamodbTablesStack
+    #                         - Outputs.dynamodbTableNameTalrOps
+    talrOpsSlackNotificationsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-ops-slack-notifications", !Ref stage ] ]
+            Description: Tailor Ops notifications to Slack
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-ops-slack-notifications
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrOpsSlackNotifications
+            Events:
+                talrOpsNotifications:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrOpsNotifications
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_OPS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrOps
+    talrPollAccountreconcileFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-poll-accountreconcile", !Ref stage ] ]
+            Description: Reconciles account status with AWS Organizations
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-poll-accountreconcile
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrPollAccountReconcile
+            Events:
+                dynamodbScaleUp:
+                    Type: Schedule
+                    Properties:
+                        Schedule: cron(20 23 * * ? *)
+                        Input: '{ "message": "scaleup" }'
+                accountReconcile:
+                    Type: Schedule
+                    Properties:
+                        Schedule: cron(30 23 * * ? *)
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrPollClaFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-poll-cla", !Ref stage ] ]
+            Description: Polls the talr-cla table for any new account requests
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-poll-cla
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrPollCla
+            Events:
+                schedule1m:
+                    Type: Schedule
+                    Properties:
+                        Schedule: rate(1 minute)
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+                    TAILOR_TABLENAME_CLASTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrClaStatus
+                    TAILOR_SNSARN_CLARESPONSE:
+                        Fn::GetAtt:
+                            - snsTopicsStack
+                            - Outputs.snsArnTalrClaResponse
+    talrPollConfigcomplianceFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-poll-configcompliance", !Ref stage ] ]
+            Description: Runs Config Compliance checker against all accounts
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-poll-configcompliance
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 120
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrPollConfigCompliance
+            Events:
+                schedule24h:
+                    Type: Schedule
+                    Properties:
+                        Schedule: rate(24 hours)
+            Environment:
+                Variables:
+                    TAILOR_API_DOMAINNAME:
+                        !Ref apiDomainName
+    talrRequeststatusFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-requeststatus", !Ref stage ] ]
+            Description: Endpoint for request status
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-requeststatus
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrRequestStatus
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    # talrToolDxImportFunction:
+    #     Type: AWS::Serverless::Function
+    #     Properties:
+    #         FunctionName: !Join [ "-", [ "talr-tool-dxImport", !Ref stage ] ]
+    #         Description: Import DX VLANs
+    #         Runtime: python2.7
+    #         CodeUri: ./sam/functions/talr-tool-dxImport
+    #         Handler: handler.handler
+    #         MemorySize: 128
+    #         Timeout: 300
+    #         Role:
+    #             Fn::GetAtt:
+    #                 - iamCoreFunctionsRolesStack
+    #                 - Outputs.iamRoleArnLambdaTalrToolDxImport
+    talrValidatorFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-validator", !Ref stage ] ]
+            Description: Validates all tasks have completed then notifies notifier
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-validator
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrValidator
+            Events:
+                talrTaskStatusStream:
+                    Type: DynamoDB
+                    Properties:
+                        Stream:
+                            Fn::GetAtt:
+                                - dynamodbTablesStack
+                                - Outputs.dynamodbStreamsTalrTaskStatus
+                        StartingPosition: LATEST
+                        BatchSize: 100
+                talrAdSecGroupStream:
+                    Type: DynamoDB
+                    Properties:
+                        Stream:
+                            Fn::ImportValue:
+                                !Sub "talr-${stage}-dynamodbStreamsTalrAdsecgroup"
+                        StartingPosition: LATEST
+                        BatchSize: 100
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+                    TAILOR_TABLENAME_ADSECGROUP:
+                        Fn::ImportValue:
+                            !Sub "talr-${stage}-dynamodbTableNameTalrAdsecgroup"
+                    TAILOR_SNSARN_NOTIFY_REQUEST:
+                        Fn::GetAtt:
+                            - snsTopicsStack
+                            - Outputs.snsArnTalrNotifyRequest
+                    TAILOR_SNSARN_EVENTS_PUSH:
+                        Fn::GetAtt:
+                            - snsTopicsStack
+                            - Outputs.snsArnTalrEventsPush
+    talrVpcSecuritGroup:
+        Type: "AWS::EC2::SecurityGroup"
+        Properties:
+            GroupDescription: talr-vpc security group
+            VpcId: !Ref vpcId
+    talrVpcFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-vpc", !Ref stage ] ]
+            Description: Configures VPC service
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-vpc
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 300
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrVpc
+            Events:
+                talrNipapcfnResponse:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrNipapCfnResponse
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_NIPAPCFN:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrNipapCfn
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+                    TAILOR_SNSARN_VPCCFN_RESPONSE:
+                        Fn::GetAtt:
+                            - snsTopicsStack
+                            - Outputs.snsArnTalrVpcCfnResponse
+            VpcConfig:
+                SecurityGroupIds:
+                    - !Ref talrVpcSecuritGroup
+                SubnetIds: !Ref applicationSubnetIds
+    talrVpcflowlogsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-vpcflowlogs", !Ref stage ] ]
+            Description: Enables VPC Flow Logs
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-vpcflowlogs
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 300
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrVpcflowlogs
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrVpciamFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-vpciam", !Ref stage ] ]
+            Description: Set IAM permissions for VPC subnets
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-vpciam
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 120
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrVpciam
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+    talrVpcdnsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-vpcdns", !Ref stage ] ]
+            Description: Configures AWS VPC DNS for internal resolution
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-vpcdns
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 120
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrVpcdns
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+Outputs:
+    dynamodbTableNameTalrCbInfo:
+        Description: talr-cbInfo DynamoDB table
+        Value: !GetAtt dynamodbTablesStack.Outputs.dynamodbTableNameTalrCbInfo
+        Export:
+            Name: !Sub "talr-${stage}-dynamodbTableNameTalrCbInfo"
+    dynamodbTableNameTalrTaskStatus:
+        Description: talr-taskStatus DynamoDB table
+        Value: !GetAtt dynamodbTablesStack.Outputs.dynamodbTableNameTalrTaskStatus
+        Export:
+            Name: !Sub "talr-${stage}-dynamodbTableNameTalrTaskStatus"
+    dynamodbTableNameTalrAccountInfo:
+        Description: talr-accountInfo DynamoDB table
+        Value: !GetAtt dynamodbTablesStack.Outputs.dynamodbTableNameTalrAccountInfo
+        Export:
+            Name: !Sub "talr-${stage}-dynamodbTableNameTalrAccountInfo"
+    snsArnTalrDispatchRequest:
+        Description: talr-dispatch-request SNS Topic Arn
+        Value: !GetAtt snsTopicsStack.Outputs.snsArnTalrDispatchRequest
+        Export:
+            Name: !Sub "talr-${stage}-snsArnTalrDispatchRequest"
+    snsArnTalrOpsNotifications:
+        Description: talr-ops-notifications SNS Topic Arn
+        Value: !GetAtt snsTopicsStack.Outputs.snsArnTalrOpsNotifications
+        Export:
+            Name: !Sub "talr-${stage}-snsArnTalrOpsNotifications"

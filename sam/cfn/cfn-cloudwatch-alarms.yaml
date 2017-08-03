@@ -1,0 +1,775 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Provisions Tailor Cloudwatch alarms
+Parameters:
+  snsArnTalrOpsNotifications:
+    Description: Ops SNS topic ARN
+    Type: String
+  stage:
+    Type: String
+Resources:
+  CloudWatchErrorAlarmTalrOpsSlackNotifications:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-ops-slack-notifications Error Alarm
+      AlarmName: !Join [ "-", [ "talr-ops-slack-notifications-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-ops-slack-notifications", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrOpsSlackNotifications:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-ops-slack-notifications Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-ops-slack-notifications-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-ops-slack-notifications", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrOpsDdbBackups:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-ops-ddb-backups Error Alarm
+      AlarmName: !Join [ "-", [ "talr-ops-ddb-backups-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-ops-ddb-backups", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrOpsDdbBackups:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-ops-ddb-backups Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-ops-ddb-backups-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-ops-ddb-backups", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrReceptionist:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-receptionist Error Alarm
+      AlarmName: !Join [ "-", [ "talr-receptionist-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-receptionist", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrReceptionist:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-receptionist Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-receptionist-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-receptionist", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrVpcFlowLogs:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-vpcflowlogs Error Alarm
+      AlarmName: !Join [ "-", [ "talr-vpcflowlogs-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-vpcflowlogs", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrVpcFlowLogs:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-vpcflowlogs Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-vpcflowlogs-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '60000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-vpcflowlogs", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrCla:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-cla Error Alarm
+      AlarmName: !Join [ "-", [ "talr-cla-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-cla", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrCla:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-cla Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-cla-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-cla", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrVpcIam:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-vpciam Error Alarm
+      AlarmName: !Join [ "-", [ "talr-vpciam-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-vpciam", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrVpcIam:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-vpciam Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-vpciam-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '60000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-vpciam", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrCloudtrail:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-cloudtrail Error Alarm
+      AlarmName: !Join [ "-", [ "talr-cloudtrail-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-cloudtrail", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrCloudtrail:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-cloudtrail Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-cloudtrail-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-cloudtrail", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrConfig:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-config Error Alarm
+      AlarmName: !Join [ "-", [ "talr-config-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-config", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrConfig:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-config Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-config-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '60000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-config", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrDirector:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-director Error Alarm
+      AlarmName: !Join [ "-", [ "talr-director-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-director", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrDirector:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-director Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-director-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-director", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrEntSupport:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-entsupport Error Alarm
+      AlarmName: !Join [ "-", [ "talr-entsupport-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-entsupport", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrEntSupport:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-entsupport Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-entsupport-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-entsupport", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrIam:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-iam Error Alarm
+      AlarmName: !Join [ "-", [ "talr-iam-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-iam", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrIam:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-iam Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-iam-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-iam", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrNipap:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-nipap Error Alarm
+      AlarmName: !Join [ "-", [ "talr-nipap-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-nipap", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrNipap:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-nipap Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-nipap-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-nipap", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrNotify:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-notify Error Alarm
+      AlarmName: !Join [ "-", [ "talr-notify-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-notify", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrNotify:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-notify Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-notify-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-notify", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrValidator:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-validator Error Alarm
+      AlarmName: !Join [ "-", [ "talr-validator-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-validator", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrValidator:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-validator Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-validator-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-validator", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrVpc:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-vpc Error Alarm
+      AlarmName: !Join [ "-", [ "talr-vpc-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-vpc", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrVpc:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-vpc Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-vpc-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '240000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-vpc", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrDirectconnect:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-directconnect Error Alarm
+      AlarmName: !Join [ "-", [ "talr-directconnect-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-directconnect", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrDirectconnect:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-directconnect Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-directconnect-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '60000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-directconnect", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrCresourceSns:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-cresource-sns Error Alarm
+      AlarmName: !Join [ "-", [ "talr-cresource-sns-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-cresource-sns", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrCresourceSns:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-cresource-sns Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-cresource-sns-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '30000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-cresource-sns", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrPollAccountReconcile:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-poll-accountreconcile Error Alarm
+      AlarmName: !Join [ "-", [ "talr-poll-accountreconcile-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-poll-accountreconcile", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrPollAccountReconcile:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-poll-accountreconcile Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-poll-accountreconcile-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '120000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-poll-accountreconcile", !Ref stage ] ]
+  CloudWatchErrorAlarmTalrCloudability:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-cloudability Error Alarm
+      AlarmName: !Join [ "-", [ "talr-cloudability-errors", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: '60'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-cloudability", !Ref stage ] ]
+  CloudWatchDurationAlarmTalrCloudability:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: Lambda talr-cloudability Duration Alarm
+      AlarmName: !Join [ "-", [ "talr-cloudability-duration", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Period: '300'
+      Statistic: Sum
+      Threshold: '120000'
+      Dimensions:
+      - Name: FunctionName
+        Value: !Join [ "-", [ "talr-cloudability", !Ref stage ] ]
+  CloudWatchReadThrottleEventsTalrTaskStatus:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: DynamoDB talr-taskStatus Read Throttle Events Alarm
+      AlarmName: !Join [ "-", [ "talr-taskStatus-read-throttle-events", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: ReadThrottleEvents
+      Namespace: AWS/DynamoDB
+      Period: '300'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: TableName
+        Value: !Join [ "-", [ "talr-taskStatus", !Ref stage ] ]
+  CloudWatchWriteThrottleEventsTalrTaskStatus:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: DynamoDB talr-taskStatus Write Throttle Events Alarm
+      AlarmName: !Join [ "-", [ "talr-taskStatus-write-throttle-events", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: WriteThrottleEvents
+      Namespace: AWS/DynamoDB
+      Period: '300'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: TableName
+        Value: !Join [ "-", [ "talr-taskStatus", !Ref stage ] ]
+  CloudWatchReadThrottleEventsTalrCbInfo:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: DynamoDB talr-cbInfo Read Throttle Events Alarm
+      AlarmName: !Join [ "-", [ "talr-cbInfo-read-throttle-events", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: ReadThrottleEvents
+      Namespace: AWS/DynamoDB
+      Period: '300'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: TableName
+        Value: !Join [ "-", [ "talr-cbInfo", !Ref stage ] ]
+  CloudWatchReadThrottleEventsTalrAccountInfo:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: DynamoDB talr-accountInfo Read Throttle Events Alarm
+      AlarmName: !Join [ "-", [ "talr-accountInfo-read-throttle-events", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: ReadThrottleEvents
+      Namespace: AWS/DynamoDB
+      Period: '300'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: TableName
+        Value: !Join [ "-", [ "talr-accountInfo", !Ref stage ] ]
+  CloudWatchReadThrottleEventsTalrNipapCfn:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: DynamoDB talr-nipapCfn Read Throttle Events Alarm
+      AlarmName: !Join [ "-", [ "talr-nipapCfn-read-throttle-events", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: ReadThrottleEvents
+      Namespace: AWS/DynamoDB
+      Period: '300'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: TableName
+        Value: !Join [ "-", [ "talr-nipapCfn", !Ref stage ] ]
+  CloudWatchReadThrottleEventsTalrDxInterface:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: DynamoDB talr-dxInterface Read Throttle Events Alarm
+      AlarmName: !Join [ "-", [ "talr-dxInterface-read-throttle-events", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: ReadThrottleEvents
+      Namespace: AWS/DynamoDB
+      Period: '300'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: TableName
+        Value: !Join [ "-", [ "talr-dxInterface", !Ref stage ] ]
+  CloudWatchWriteThrottleEventsTalrDxInterface:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - !Ref 'snsArnTalrOpsNotifications'
+      AlarmDescription: DynamoDB talr-dxInterface Write Throttle Events Alarm
+      AlarmName: !Join [ "-", [ "talr-dxInterface-write-throttle-events", !Ref stage ] ]
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: '1'
+      MetricName: WriteThrottleEvents
+      Namespace: AWS/DynamoDB
+      Period: '300'
+      Statistic: Sum
+      Threshold: '0'
+      Dimensions:
+      - Name: TableName
+        Value: !Join [ "-", [ "talr-dxInterface", !Ref stage ] ]
+Outputs: {}

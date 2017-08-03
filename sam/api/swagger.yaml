@@ -1,0 +1,1242 @@
+---
+swagger: "2.0"
+info:
+  version: "2017-01-11T06:08:39Z"
+  title: "tailor"
+  description: Tailor service API
+host: "${stageVariables.apiDomainName}"
+schemes:
+- "https"
+paths:
+  /accounts:
+    get:
+      description: "This method allows looking up an account by account number, email\
+        \ address or requestid"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "emailaddress"
+        in: "query"
+        required: false
+        type: "string"
+      - name: "accountid"
+        in: "query"
+        description: "accountid represents the unique account number"
+        required: false
+        type: "string"
+      - name: "accountCbAlias"
+        in: "header"
+        required: false
+        type: "string"
+      - name: "ipaddress"
+        in: "query"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+        400:
+          description: "400 response"
+        403:
+          description: "403 response"
+        404:
+          description: "404 response"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .*Not found.*:
+            statusCode: "404"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4040\",\"message\" : \"Account not found\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-inquirer-${stageVariables.stage}/invocations"
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        cacheNamespace: "4uuhsn"
+        cacheKeyParameters:
+        - "method.request.querystring.ipaddress"
+        type: "aws"
+    post:
+      description: "This method is used to request an AWS account creation. "
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "accountRequest"
+        description: "Account request object"
+        required: true
+        schema:
+          $ref: "#/definitions/accountRequest"
+      responses:
+        400:
+          description: "Bad request"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        202:
+          description: "Accepted operation"
+          schema:
+            $ref: "#/definitions/requestResponseSuccess"
+        403:
+          description: "Forbidden"
+        409:
+          description: "Duplicate account"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "202"
+          .*Duplicate request.*:
+            statusCode: "409"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4090\",\"message\" : \"Duplicate request\"}"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-receptionist-${stageVariables.stage}/invocations"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        type: "aws"
+    put:
+      description: "This method is used to update account metadata. "
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "accountUpdate"
+        description: "Account update object"
+        required: true
+        schema:
+          $ref: "#/definitions/accountUpdate"
+      responses:
+        400:
+          description: "Bad request"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        202:
+          description: "Accepted operation"
+          schema:
+            $ref: "#/definitions/requestResponseSuccess"
+        403:
+          description: "Forbidden"
+        409:
+          description: "Duplicate account"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "202"
+          .*Duplicate request.*:
+            statusCode: "409"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4090\",\"message\" : \"Duplicate request\"}"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-accountupdate-metadata-${stageVariables.stage}/invocations"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        type: "aws"
+  /accounts/ids:
+    get:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "accountCbAlias"
+        in: "header"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+        400:
+          description: "400 response"
+        403:
+          description: "403 response"
+        404:
+          description: "404 response"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "202"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-inquirer-${stageVariables.stage}/invocations"
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+  /configrules:
+    put:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "accountCbAlias"
+        in: "header"
+        required: false
+        type: "string"
+      - in: "body"
+        name: "configrulesUpdate"
+        required: true
+        schema:
+          $ref: "#/definitions/configrulesUpdate"
+      responses:
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        202:
+          description: "202 response"
+          schema:
+            $ref: "#/definitions/requestResponseSuccess"
+        403:
+          description: "403 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        404:
+          description: "404 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        409:
+          description: "409 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "202"
+          .*Duplicate request.*:
+            statusCode: "409"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4090\",\"message\" : \"Duplicate request\"}"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .*Not found.*:
+            statusCode: "404"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4040\",\"message\" : \"Not found\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-accountupdate-configrules-${stageVariables.stage}/invocations"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+  /requeststatus/{requestId}:
+    get:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "requestId"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/requestResponseSuccess"
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        403:
+          description: "403 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        404:
+          description: "404 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .*Not found.*:
+            statusCode: "404"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4040\",\"message\" : \"Not found\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-requeststatus-${stageVariables.stage}/invocations"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+  /vpcflowlogs:
+    put:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "accountCbAlias"
+        in: "header"
+        required: false
+        type: "string"
+      - in: "body"
+        name: "vpcflowlogsUpdate"
+        required: true
+        schema:
+          $ref: "#/definitions/vpcflowlogsUpdate"
+      responses:
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        202:
+          description: "202 response"
+          schema:
+            $ref: "#/definitions/requestResponseSuccess"
+        403:
+          description: "403 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        404:
+          description: "404 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        409:
+          description: "409 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "202"
+          .*Duplicate request.*:
+            statusCode: "409"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4090\",\"message\" : \"Duplicate request\"}"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .*Not found.*:
+            statusCode: "404"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4040\",\"message\" : \"Not found\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-accountupdate-vpcflowlogs-${stageVariables.stage}/invocations"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+  /vpcdns:
+    put:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "vpcdnsUpdate"
+        required: true
+        schema:
+          $ref: "#/definitions/vpcdnsUpdate"
+      responses:
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        202:
+          description: "202 response"
+          schema:
+            $ref: "#/definitions/requestResponseSuccess"
+        403:
+          description: "403 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        404:
+          description: "404 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        409:
+          description: "409 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "202"
+          .*Duplicate request.*:
+            statusCode: "409"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4090\",\"message\" : \"Duplicate request\"}"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .*Not found.*:
+            statusCode: "404"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4040\",\"message\" : \"Not found\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-accountupdate-vpcdns-${stageVariables.stage}/invocations"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+  /cloudability/{accountId}:
+    put:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "accountId"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        202:
+          description: "202 response"
+          schema:
+            $ref: "#/definitions/requestResponseSuccess"
+        403:
+          description: "403 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        404:
+          description: "404 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        409:
+          description: "409 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "202"
+          .*Duplicate request.*:
+            statusCode: "409"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4090\",\"message\" : \"Duplicate request\"}"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .*Not found.*:
+            statusCode: "404"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4040\",\"message\" : \"Not found\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-accountupdate-cloudability-${stageVariables.stage}/invocations"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+  /cloudtrail/{accountId}:
+    put:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "accountId"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        202:
+          description: "202 response"
+          schema:
+            $ref: "#/definitions/requestResponseSuccess"
+        403:
+          description: "403 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        404:
+          description: "404 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        409:
+          description: "409 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "202"
+          .*Duplicate request.*:
+            statusCode: "409"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4090\",\"message\" : \"Duplicate request\"}"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .*Not found.*:
+            statusCode: "404"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4040\",\"message\" : \"Not found\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-accountupdate-cloudtrail-${stageVariables.stage}/invocations"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+  /config/{accountId}:
+    put:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "accountId"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        202:
+          description: "202 response"
+          schema:
+            $ref: "#/definitions/requestResponseSuccess"
+        403:
+          description: "403 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        404:
+          description: "404 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        409:
+          description: "409 response"
+          schema:
+            $ref: "#/definitions/requestResponseFailure"
+        500:
+          description: "500 response"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "202"
+          .*Duplicate request.*:
+            statusCode: "409"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4090\",\"message\" : \"Duplicate request\"}"
+          .*Forbidden.*:
+            statusCode: "403"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4030\",\"message\" : \"Forbidden\"}"
+          .*Bad request.*:
+            statusCode: "400"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4000\",\"message\" : \"Bad request\"}"
+          .*Not found.*:
+            statusCode: "404"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                4040\",\"message\" : \"Not found\"}"
+          .+:
+            statusCode: "500"
+            responseTemplates:
+              application/json: "#set($inputRoot = $input.path('$')){\"code\" : \"\
+                5000\",\"message\" : \"Internal error message. Contact your internal AWS Support team.\"}"
+        requestTemplates:
+          application/json: "##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html\n\
+            ##  This template will pass through all parameters including path, querystring,\
+            \ header, stage variables, and context through to the integration endpoint\
+            \ via the body/payload\n#set($allParams = $input.params())\n{\n\"body-json\"\
+            \ : $input.json('$'),\n\"params\" : {\n#foreach($type in $allParams.keySet())\n\
+            \    #set($params = $allParams.get($type))\n\"$type\" : {\n    #foreach($paramName\
+            \ in $params.keySet())\n    \"$paramName\" : \"$util.escapeJavaScript($params.get($paramName))\"\
+            \n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n\
+            #end\n},\n\"stage-variables\" : {\n#foreach($key in $stageVariables.keySet())\n\
+            \"$key\" : \"$util.escapeJavaScript($stageVariables.get($key))\"\n   \
+            \ #if($foreach.hasNext),#end\n#end\n},\n\"context\" : {\n    \"account-id\"\
+            \ : \"$context.identity.accountId\",\n    \"api-id\" : \"$context.apiId\"\
+            ,\n    \"api-key\" : \"$context.identity.apiKey\",\n    \"authorizer-principal-id\"\
+            \ : \"$context.authorizer.principalId\",\n    \"caller\" : \"$context.identity.caller\"\
+            ,\n    \"cognito-authentication-provider\" : \"$context.identity.cognitoAuthenticationProvider\"\
+            ,\n    \"cognito-authentication-type\" : \"$context.identity.cognitoAuthenticationType\"\
+            ,\n    \"cognito-identity-id\" : \"$context.identity.cognitoIdentityId\"\
+            ,\n    \"cognito-identity-pool-id\" : \"$context.identity.cognitoIdentityPoolId\"\
+            ,\n    \"http-method\" : \"$context.httpMethod\",\n    \"stage\" : \"\
+            $context.stage\",\n    \"source-ip\" : \"$context.identity.sourceIp\"\
+            ,\n    \"user\" : \"$context.identity.user\",\n    \"user-agent\" : \"\
+            $context.identity.userAgent\",\n    \"user-arn\" : \"$context.identity.userArn\"\
+            ,\n    \"request-id\" : \"$context.requestId\",\n    \"resource-id\" :\
+            \ \"$context.resourceId\",\n    \"resource-path\" : \"$context.resourcePath\"\
+            \n    }\n}\n"
+        uri: "arn:aws:apigateway:<ACCOUNT_REGION>:lambda:path/2015-03-31/functions/arn:aws:lambda:<ACCOUNT_REGION>:<ACCOUNT_NUMBER>:function:talr-accountupdate-config-${stageVariables.stage}/invocations"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+securityDefinitions:
+  sigv4:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-amazon-apigateway-authtype: "awsSigv4"
+definitions:
+  configrulesUpdate:
+    type: "object"
+    properties:
+      accountId:
+        type: "string"
+  requestResponseFailure:
+    type: "object"
+    properties:
+      code:
+        type: "string"
+      message:
+        type: "string"
+  requestResponseSuccess:
+    type: "object"
+    properties:
+      code:
+        type: "string"
+      message:
+        type: "string"
+      requestId:
+        type: "string"
+        pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+  vpcflowlogsUpdate:
+    type: "object"
+    properties:
+      region:
+        type: "string"
+      stackName:
+        type: "string"
+      accountId:
+        type: "string"
+  vpcdnsUpdate:
+    type: "object"
+    properties:
+      region:
+        type: "string"
+      vpcId:
+        type: "string"
+      accountId:
+        type: "string"
+  accountRequest:
+    type: "object"
+    properties:
+      accountRequest:
+        type: "object"
+        properties:
+          accountCbAlias:
+            type: "string"
+          accountRegulated:
+            type: "boolean"
+          accountVpcAzCount:
+            type: "string"
+          accountVpcPrefix:
+            type: "string"
+          accountRegion:
+            type: "array"
+            items:
+              type: "string"
+          accountTagCostCenter:
+            type: "string"
+          accountTagLongProjectName:
+            type: "string"
+          accountTagShortProjectName:
+            type: "string"
+          accountTagEnvironment:
+            type: "string"
+          accountUserAccessList:
+            type: "array"
+            items:
+              type: "string"
+          accountTechnicalContactFullName:
+            type: "string"
+          accountTechnicalContactUsername:
+            type: "string"
+          requestorFullName:
+            type: "string"
+          requestorUsername:
+            type: "string"
+          requestorManager:
+            type: "string"
+          requestorDepartment:
+            type: "string"
+          requestorEmailAddress:
+            type: "string"
+          externalTransactionId:
+            type: "string"
+          comment:
+            type: "string"
+  accountUpdate:
+    type: "object"
+    properties:
+      accountUpdate:
+        type: "object"
+x-amazon-apigateway-documentation:
+  version: "20170112205452"
+  createdDate: "2017-01-13T04:54:54Z"
+  documentationParts:
+  - location:
+      type: "API"
+    properties:
+      description: "Tailor is an AWS account management and provisioning service."
+  - location:
+      type: "METHOD"
+      path: "/accounts"
+      method: "GET"
+    properties:
+      description: "This method allows looking up an account by account number, email\
+        \ address or requestid"
+  - location:
+      type: "METHOD"
+      path: "/accounts"
+      method: "POST"
+    properties:
+      description: "This method is used to request an AWS account creation. "
+  - location:
+      type: "QUERY_PARAMETER"
+      path: "/accounts"
+      method: "GET"
+      name: "accountid"
+    properties:
+      description: "accountid represents the unique account number"
+  - location:
+      type: "QUERY_PARAMETER"
+      path: "/accounts"
+      method: "GET"
+      name: "requestid"
+    properties:
+      description: "requestid represents the task UUID returned from POST /accounts"
+  - location:
+      type: "REQUEST_BODY"
+      path: "/accounts"
+      method: "POST"
+    properties:
+      description: "Account request object"
+  - location:
+      type: "RESOURCE"
+      path: "/accounts"
+    properties:
+      description: "This resource allows for the creation and lookup of AWS accounts."
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "GET"
+      statusCode: "200"
+    properties:
+      description: "200 response"
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "GET"
+      statusCode: "400"
+    properties:
+      description: "400 response"
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "GET"
+      statusCode: "403"
+    properties:
+      description: "403 response"
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "GET"
+      statusCode: "404"
+    properties:
+      description: "404 response"
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "GET"
+      statusCode: "409"
+    properties:
+      description: "409 response"
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "POST"
+      statusCode: "202"
+    properties:
+      description: "Accepted operation"
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "POST"
+      statusCode: "400"
+    properties:
+      description: "Bad request"
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "POST"
+      statusCode: "403"
+    properties:
+      description: "Forbidden"
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "POST"
+      statusCode: "404"
+    properties:
+      description: "404 response"
+  - location:
+      type: "RESPONSE"
+      path: "/accounts"
+      method: "POST"
+      statusCode: "409"
+    properties:
+      description: "Duplicate account"

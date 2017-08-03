@@ -1,0 +1,267 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+
+    "Description": "Builds Postgres database for Tailor's NIPAP backend",
+
+    "Parameters": {
+        "AppName": {
+            "Description": "What is the name of the application? This is used to tag the resources",
+            "Type": "String",
+            "Default": "tailor",
+            "MinLength": "3",
+            "MaxLength": "25"
+        },
+        "EnvironmentName": {
+            "Description": "What is the environment type, e.g. prd/stg/dev/tst.",
+            "Type": "String",
+            "MinLength": "3",
+            "MaxLength": "5",
+            "AllowedValues": ["prd", "stg", "dev", "tst"]
+        },
+        "TailorNipapDbInstanceClass": {
+            "Description": "Database Instance Class",
+            "Type": "String",
+            "Default": "db.t2.micro",
+            "AllowedValues": ["db.t2.micro", "db.t2.small", "db.t2.medium", "db.t2.large"]
+        },
+        "TailorNipapDbSubnetGroup": {
+            "Description": "Database Subnet Group Name",
+            "Type": "String",
+            "MinLength": "3",
+            "MaxLength": "50"
+        },
+        "TailorNipapDbMasterPassword": {
+            "NoEcho": "true",
+            "Description": "Database Master Password",
+            "Type": "String",
+            "MinLength": "1",
+            "MaxLength": "41",
+            "AllowedPattern": "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$"
+        },
+        "VPCID": {
+            "Description": "VPC ID",
+            "Type": "AWS::EC2::VPC::Id",
+            "ConstraintDescription": "Must be the VPC ID of the VPC where you're building this application in the form of vpc-abcdefgh"
+        }
+
+    },
+
+    "Mappings": {
+        "AWSInstanceType2Arch": {
+            "t2.micro": {
+                "Arch": "HVM64"
+            },
+            "t2.small": {
+                "Arch": "HVM64"
+            },
+            "t2.medium": {
+                "Arch": "HVM64"
+            },
+            "t2.large": {
+                "Arch": "HVM64"
+            },
+            "m3.medium": {
+                "Arch": "HVM64"
+            },
+            "m3.large": {
+                "Arch": "HVM64"
+            },
+            "m3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "m3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.large": {
+                "Arch": "HVM64"
+            },
+            "m4.xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.large": {
+                "Arch": "HVM64"
+            },
+            "c3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.large": {
+                "Arch": "HVM64"
+            },
+            "r3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "hs1.8xlarge": {
+                "Arch": "HVM64"
+            }
+        },
+        "AWSRegionArch2AMI": {
+            "us-west-2": {
+                "HVM64": "ami-9abea4fb"
+            },
+            "us-west-1": {
+                "HVM64": "ami-06116566"
+            },
+            "us-east-1": {
+                "HVM64": "ami-fce3c696"
+            }
+        }
+    },
+
+    "Resources": {
+        "RdsNipapDb": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+                "AllocatedStorage": "5",
+                "AllowMajorVersionUpgrade": true,
+                "AutoMinorVersionUpgrade": true,
+                "BackupRetentionPeriod": "30",
+                "DBInstanceClass": "db.t2.micro",
+                "DBInstanceIdentifier": "talr-nipap",
+                "DBName": "nipap",
+                "DBSecurityGroups": [{
+                    "Ref": "SgNipapPostgres"
+                }],
+                "DBSubnetGroupName": {
+                    "Ref": "TailorNipapDbSubnetGroup"
+                },
+                "Engine": "postgres",
+                "MasterUsername": "root",
+                "MasterUserPassword": {
+                    "Ref": "TailorNipapDbMasterPassword"
+                },
+                "MultiAZ": true,
+                "StorageType": "gp2",
+                "Tags": [{
+                    "Key": "Name",
+                    "Value": "Tailor NIPAP"
+                }, {
+                    "Key": "stack",
+                    "Value": {
+                        "Ref": "EnvironmentName"
+                    }
+                }, {
+                    "Key": "app",
+                    "Value": {
+                        "Ref": "AppName"
+                    }
+                }, {
+                    "Key": "purpose",
+                    "Value": "DB backend for NIPAP IPAM tool"
+                }]
+            },
+            "DeletionPolicy": "Snapshot"
+        },
+        "SgNipapPostgres": {
+            "Type": "AWS::RDS::DBSecurityGroup",
+            "Properties": {
+                "GroupDescription": "Postgres",
+                "EC2VpcId": {
+                    "Ref": "VPCID"
+                },
+                "DBSecurityGroupIngress": [{
+                    "EC2SecurityGroupId": {
+                        "Ref": "SgTailorComponents"
+                    }
+                }],
+                "Tags": [{
+                    "Key": "purpose",
+                    "Value": "NIPAP Postgres"
+                }, {
+                    "Key": "stack",
+                    "Value": {
+                        "Ref": "EnvironmentName"
+                    }
+                }, {
+                    "Key": "app",
+                    "Value": {
+                        "Ref": "AppName"
+                    }
+                }]
+            }
+        },
+        "SgTailorComponents": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Tailor infrastructure resources",
+                "VpcId": {
+                    "Ref": "VPCID"
+                },
+                "SecurityGroupIngress": [],
+                "Tags": [{
+                    "Key": "purpose",
+                    "Value": "Tailor infrastructure resources"
+                }, {
+                    "Key": "stack",
+                    "Value": {
+                        "Ref": "EnvironmentName"
+                    }
+                }, {
+                    "Key": "app",
+                    "Value": {
+                        "Ref": "AppName"
+                    }
+                }]
+            }
+        }
+    },
+
+    "Outputs": {
+        "PostgressDbEndpoint": {
+            "Description": "NIPAP Postgress DB Endpoint",
+            "Value": {
+                "Fn::GetAtt" : [ "RdsNipapDb", "Endpoint.Address" ]
+            }
+        },
+        "PostgressDbPort": {
+            "Description": "NIPAP Postgress DB Port",
+            "Value": {
+                "Fn::GetAtt" : [ "RdsNipapDb", "Endpoint.Port" ]
+            }
+        },
+        "TailorComponentsSg": {
+            "Description": "Shared Security Group for Tailor Components",
+            "Value": {
+                "Fn::GetAtt" : [ "SgTailorComponents", "GroupId" ]
+            }
+        }
+
+    }
+
+
+}
