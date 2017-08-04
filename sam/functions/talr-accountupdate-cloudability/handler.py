@@ -49,7 +49,6 @@ def handler(event, context):
 
         # Check if account already exists
         getAccountId = accountInfo.scan(
-            ProjectionExpression='accountId, accountEmailAddress',
             FilterExpression=Attr('accountId').eq(accountId)
         )
 
@@ -58,6 +57,34 @@ def handler(event, context):
             raise Exception({"code": "4040", "message": "ERROR: Not found"})
 
         elif int(getAccountId['Count']) > 0:
+
+            try:
+                if getAccountId['Items'][0]['requestorDepartment']:
+                    pass
+            except KeyError as e:
+                print(e)
+                raise Exception({"code": "5000", "message": "ERROR: Internal error. Metadata not complete."})
+
+            try:
+                if getAccountId['Items'][0]['accountTechnicalContactFullName']:
+                    pass
+            except KeyError as e:
+                print(e)
+                raise Exception({"code": "5000", "message": "ERROR: Internal error. Metadata not complete."})
+
+            try:
+                if getAccountId['Items'][0]['accountTagCostCenter']:
+                    pass
+            except KeyError as e:
+                print(e)
+                raise Exception({"code": "5000", "message": "ERROR: Internal error. Metadata not complete."})
+
+            try:
+                if getAccountId['Items'][0]['accountTagEnvironment']:
+                    pass
+            except KeyError as e:
+                print(e)
+                raise Exception({"code": "5000", "message": "ERROR: Internal error. Metadata not complete."})
 
             # Update accountInfo with new requestId
             accountInfo.update_item(
