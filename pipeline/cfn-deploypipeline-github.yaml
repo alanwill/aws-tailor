@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: 'AWS::Serverless-2016-10-31'
-Description: Deployment Pipeline
+Description: Deployment Pipeline (Github.com Source)
 Parameters:
     ServiceName:
         Type: String
@@ -12,10 +12,20 @@ Parameters:
           - beta
           - prod
         Description: Enter alpha, beta or prod to designate the deployment stage/environment
-    DeploymentZipName:
+    GitHubToken:
         Type: String
-        Default: tailor-deploy.zip
-        Description: Enter the name of the zip artifact in S3 that CodePipeline will watch to invoke the pipeline
+        NoEcho: true
+        Description: Enter a GitHub OAuthToken with access to the repo. Tokens can be generated  https://github.com/settings/tokens
+    GitHubUser:
+        Type: String
+        Description: GitHub username.
+    GitHubRepo:
+        Type: String
+        Description: GitHub repository name to pull from.
+    GitHubBranch:
+        Type: String
+        Description: Name of GitHub branch to use.
+        Default: master
     SamInputFile:
         Type: String
         Default: main.yaml
@@ -185,15 +195,17 @@ Resources:
                     Name: Source
                     Actions:
                         -
-                            Name: DownloadCodeZip
+                            Name: Source
                             ActionTypeId:
                                 Category: Source
-                                Owner: AWS
-                                Provider: S3
+                                Owner: ThirdParty
+                                Provider: GitHub
                                 Version: 1
                             Configuration:
-                                S3Bucket: !Ref BuildArtifactsBucket
-                                S3ObjectKey: !Join [ "/", [ !Ref Stage, "code", !Ref DeploymentZipName ] ]
+                                Owner: !Ref GitHubUser
+                                Repo: !Ref GitHubRepo
+                                Branch: !Ref GitHubBranch
+                                OAuthToken: !Ref GitHubToken
                             OutputArtifacts:
                                 - Name: SourceZip
                             RunOrder: 1

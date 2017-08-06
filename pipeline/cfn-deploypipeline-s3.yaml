@@ -1,0 +1,318 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Deployment Pipeline (S3 Source)
+Parameters:
+    ServiceName:
+        Type: String
+        Description: Name of the service being built. This name will be reflected in the pipeline name, build names and lamdab functions.
+    Stage:
+        Type: String
+        AllowedValues:
+          - alpha
+          - beta
+          - prod
+        Description: Enter alpha, beta or prod to designate the deployment stage/environment
+    DeploymentZipName:
+        Type: String
+        Default: tailor-deploy.zip
+        Description: Enter the name of the zip artifact in S3 that CodePipeline will watch to invoke the pipeline
+    SamInputFile:
+        Type: String
+        Default: main.yaml
+        Description: Enter the name of the SAM input file
+    BuildArtifactsBucket:
+        Type: String
+        Description: Enter the name of the S3 bucket that will store all artifacts
+    SlackChannelName:
+        Type: String
+        Description: Slack channel name where notifications should appear
+    SlackWebhookUrl:
+        Type: String
+        Description: Slack webhook URL (including https://)
+Resources:
+    # CodeBuild project and resources (S3 Bucket for build artifacts, Role, Project)
+    CodeBuildServiceRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Action:
+                      - 'sts:AssumeRole'
+                    Effect: Allow
+                    Principal:
+                      Service:
+                        - codebuild.amazonaws.com
+            Policies:
+                - PolicyName: CodeBuildAccess
+                  PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                      - Effect: Allow
+                        Resource:
+                          - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ServiceName}-build-${Stage}'
+                          - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ServiceName}-build-${Stage}:*'
+                        Action:
+                          - 'logs:CreateLogGroup'
+                          - 'logs:CreateLogStream'
+                          - 'logs:PutLogEvents'
+                      - Effect: Allow
+                        Resource:
+                          - !Sub 'arn:aws:s3:::${BuildArtifactsBucket}/*'
+                        Action:
+                          - 's3:GetObject'
+                          - 's3:GetObjectVersion'
+                          - 's3:PutObject'
+                      - Effect: Allow
+                        Resource:
+                          - !Sub 'arn:aws:iam::${AWS::AccountId}:role/${CloudFormationExecutionRole}'
+                        Action:
+                          - 'iam:PassRole'
+                      - Effect: Allow
+                        Resource:
+                          - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/tailor-${Stage}/*'
+                        Action:
+                          - 'cloudformation:CreateChangeSet'
+    CodeBuildProject:
+        Type: AWS::CodeBuild::Project
+        Properties:
+            Name: !Sub '${ServiceName}-build-${Stage}'
+            Description: Build project for the Tailor service
+            Artifacts:
+              Type: CODEPIPELINE
+            Environment:
+                Type: LINUX_CONTAINER
+                ComputeType: BUILD_GENERAL1_SMALL
+                Image: aws/codebuild/python:2.7.12
+                EnvironmentVariables:
+                    -
+                        Name: S3_BUCKET
+                        Value: !Sub '${BuildArtifactsBucket}'
+                    -
+                        Name: STAGE_NAME
+                        Value: !Sub '${Stage}'
+                    -
+                        Name: SAM_INPUT_FILE
+                        Value: !Ref SamInputFile
+                    -
+                        Name: AWS_ACCOUNT_NUMBER
+                        Value: !Sub ${AWS::AccountId}
+                    -
+                        Name: CFN_ROLE
+                        Value: !Ref CloudFormationExecutionRole
+            ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+            Source:
+                Type: CODEPIPELINE
+
+    # CodePipeline definition and required roles
+    CFNPipelinePolicy:
+        Type: AWS::IAM::ManagedPolicy
+        Properties:
+            Description: CloudFormation Pipeline Execution Policy
+            Path: "/"
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    Effect: Allow
+                    Action:
+                        - 'cloudformation:CreateStack'
+                        - 'cloudformation:DescribeStacks'
+                        - 'cloudformation:DeleteStack'
+                        - 'cloudformation:UpdateStack'
+                        - 'cloudformation:CreateChangeSet'
+                        - 'cloudformation:ExecuteChangeSet'
+                        - 'cloudformation:DeleteChangeSet'
+                        - 'cloudformation:DescribeChangeSet'
+                        - 'cloudformation:SetStackPolicy'
+                        - 'cloudformation:SetStackPolicy'
+                        - 'cloudformation:ValidateTemplate'
+                        - 'codebuild:StartBuild'
+                        - 'codebuild:BatchGetBuilds'
+                    Resource: "*"
+    CloudFormationExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+        Path: /
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/AdministratorAccess'
+    PipelineExecutionRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Action:
+                    - 'sts:AssumeRole'
+                    Effect: Allow
+                    Principal:
+                      Service:
+                        - codepipeline.amazonaws.com
+            Path: /
+            ManagedPolicyArns:
+                - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+                - !Ref CFNPipelinePolicy
+            Policies:
+                - PolicyName: CodePipelineAccess
+                  PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Action:
+                            - 'iam:PassRole'
+                            - 'lambda:InvokeFunction'
+                            - 'lambda:ListFunctions'
+                            - 'lambda:InvokeAsyc'
+                          Effect: Allow
+                          Resource: '*'
+    Pipeline:
+        Type: AWS::CodePipeline::Pipeline
+        Properties:
+            ArtifactStore:
+                Location: !Sub ${BuildArtifactsBucket}
+                Type: S3
+            Name: !Sub ${ServiceName}-pipeline-${Stage}
+            RoleArn: !GetAtt PipelineExecutionRole.Arn
+            Stages:
+                -
+                    Name: Source
+                    Actions:
+                        -
+                            Name: DownloadCodeZip
+                            ActionTypeId:
+                                Category: Source
+                                Owner: AWS
+                                Provider: S3
+                                Version: 1
+                            Configuration:
+                                S3Bucket: !Ref BuildArtifactsBucket
+                                S3ObjectKey: !Join [ "/", [ !Ref Stage, "code", !Ref DeploymentZipName ] ]
+                            OutputArtifacts:
+                                - Name: SourceZip
+                            RunOrder: 1
+                -
+                    Name: Build
+                    Actions:
+                        -
+                            Name: PackageCode
+                            ActionTypeId:
+                                Category: Build
+                                Owner: AWS
+                                Provider: CodeBuild
+                                Version: 1
+                            Configuration:
+                                ProjectName: !Ref CodeBuildProject
+                            InputArtifacts:
+                                -
+                                    Name: SourceZip
+                            OutputArtifacts:
+                                -
+                                    Name: BuildArtifacts
+                        -
+                            Name: BuildSlackNotification
+                            ActionTypeId:
+                                Category: Invoke
+                                Owner: AWS
+                                Provider: Lambda
+                                Version: 1
+                            Configuration:
+                                FunctionName: !Ref LambdaSlackNotify
+                -
+                    Name: Deploy
+                    Actions:
+                        -
+                            Name: ExecuteChangeSet
+                            ActionTypeId:
+                                Category: Deploy
+                                Owner: AWS
+                                Provider: CloudFormation
+                                Version: 1
+                            Configuration:
+                                ActionMode: CHANGE_SET_EXECUTE
+                                RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                                StackName: !Sub '${ServiceName}-${Stage}'
+                                ChangeSetName: !Sub '${ServiceName}-${Stage}-ChangeSet'
+                            OutputArtifacts:
+                                -
+                                    Name: !Sub '${ServiceName}-${Stage}-ChangeSet'
+                            RunOrder: 1
+                        -
+                            Name: ExecuteChangeSetSlackNotification
+                            ActionTypeId:
+                                Category: Invoke
+                                Owner: AWS
+                                Provider: Lambda
+                                Version: 1
+                            Configuration:
+                                FunctionName: !Ref LambdaSlackNotify
+                            RunOrder: 1
+                -
+                    Name: Complete
+                    Actions:
+                        -
+                            Name: CompletionNotification
+                            ActionTypeId:
+                                Category: Invoke
+                                Owner: AWS
+                                Provider: Lambda
+                                Version: 1
+                            Configuration:
+                                FunctionName: !Ref LambdaSlackNotify
+    IamRoleLambdaSlackNotify:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                        Effect: Allow
+                        Principal:
+                            Service:
+                                - lambda.amazonaws.com
+                        Action:
+                            - sts:AssumeRole
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+            Path: "/"
+    IamPolicyLambdaSlackNotify1:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: CodePipelineAccess
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - codepipeline:Get*
+                        - codepipeline:PutJob*
+                    Resource: "*"
+            Roles:
+                - Ref: IamRoleLambdaSlackNotify
+    LambdaSlackNotify:
+        Type: AWS::Serverless::Function
+        Properties:
+            Description: Sends CodePipeline events to Slack
+            Runtime: python2.7
+            CodeUri: ./functions/slack-notify
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 30
+            Role: !GetAtt IamRoleLambdaSlackNotify.Arn
+            Environment:
+                Variables:
+                    SLACK_CHANNEL_NAME:
+                        !Ref SlackChannelName
+                    SLACK_WEBHOOK_URL:
+                        !Ref SlackWebhookUrl
+                    SERVICE_NAME:
+                        !Ref ServiceName
+                    STAGE:
+                        !Ref Stage
