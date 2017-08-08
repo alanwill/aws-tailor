@@ -3148,7 +3148,7 @@ Resources:
                     Action:
                         - lambda:InvokeFunction
                     Resource:
-                        !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:talr-cloudability-${stage}"
+                        !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:talr-accountupdate-cloudability-${stage}"
             Roles:
                 - Ref: iamRoleLambdaTalrPollAccountCompliance
 Outputs:
