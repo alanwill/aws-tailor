@@ -3121,6 +3121,21 @@ Resources:
                     Resource: arn:aws:iam::*:role/PayerAccountAccessRole
             Roles:
                 - Ref: iamRoleLambdaTalrPollAccountCompliance
+    iamPolicyLambdaTalrPollAccountCompliance4:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: DecryptAccess
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - kms:Decrypt
+                    Resource:
+                        !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${kmsKeyId}
+            Roles:
+                - Ref: iamRoleLambdaTalrPollAccountCompliance
 Outputs:
     iamRoleArnLambdaTalrReceptionist:
         Description: talr-receptionist IAM role arn

@@ -7,7 +7,7 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr
 import os
 import sys
-import datetime
+from base64 import b64decode
 
 # Path to modules needed to package local lambda function for upload
 currentdir = os.path.dirname(os.path.realpath(__file__))
@@ -68,7 +68,8 @@ def getTailorCreds(cb_object, cb_alias):
             'accountCbAlias': cb_alias
         }
     )
-    tailorApiAccessKey = getCbInfo['Item']['tailorApiAccessKey']
-    tailorApiSecretKey = getCbInfo['Item']['tailorApiSecretKey']
+
+    tailorApiAccessKey = kms.decrypt(CiphertextBlob=b64decode(getCbInfo['Item']['tailorApiAccessKeyEncrypted']))['Plaintext']
+    tailorApiSecretKey = kms.decrypt(CiphertextBlob=b64decode(getCbInfo['Item']['tailorApiSecretKeyEncrypted']))['Plaintext']
 
     return tailorApiAccessKey, tailorApiSecretKey
