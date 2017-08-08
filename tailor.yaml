@@ -1005,6 +1005,37 @@ Resources:
                         Fn::GetAtt:
                             - dynamodbTablesStack
                             - Outputs.dynamodbTableNameTalrAccountInfo
+    talrPollAccountcomplianceFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-poll-accountcompliance", !Ref stage ] ]
+            Description: Applies account update APIs across all active accounts
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-poll-accountcompliance
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrPollAccountCompliance
+            # Events:
+            #     cloudtrail:
+            #         Type: Schedule
+            #         Properties:
+            #             Schedule: cron(20 23 * * ? *)
+            #             Input: '{ "accountUpdate": "cloudtrail" }'
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+                    TAILOR_API_DOMAINNAME: !Ref apiDomainName
     talrPollClaFunction:
         Type: AWS::Serverless::Function
         Properties:
