@@ -3136,6 +3136,21 @@ Resources:
                         !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${kmsKeyId}
             Roles:
                 - Ref: iamRoleLambdaTalrPollAccountCompliance
+    iamPolicyLambdaTalrPollAccountCompliance5:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: LambdaAccess
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - lambda:InvokeFunction
+                    Resource:
+                        !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:talr-cloudability-${stage}"
+            Roles:
+                - Ref: iamRoleLambdaTalrPollAccountCompliance
 Outputs:
     iamRoleArnLambdaTalrReceptionist:
         Description: talr-receptionist IAM role arn

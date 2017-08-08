@@ -24,6 +24,7 @@ log.setLevel(logging.DEBUG)
 dynamodb = boto3.resource('dynamodb')
 sts = boto3.client('sts')
 kms = boto3.client('kms')
+awslambda = boto3.client('lambda')
 
 
 def handler(event, context):
@@ -32,6 +33,7 @@ def handler(event, context):
     accountInfo = dynamodb.Table(os.environ['TAILOR_TABLENAME_ACCOUNTINFO'])
     cbInfo = dynamodb.Table(os.environ['TAILOR_TABLENAME_CBINFO'])
     tailorApiDomain = os.environ['TAILOR_API_DOMAINNAME']
+    stage = context.function_name.split('-')[-1]
 
     # Look up all CBs in talr-cbInfo and process based on each.
     scanCbInfo = cbInfo.scan(
@@ -43,20 +45,40 @@ def handler(event, context):
         accountIds = getAccountIds(tailorApiAccessKey, tailorApiSecretKey, tailorApiDomain, i['accountCbAlias'])
 
         if event['api'] == 'cloudability':
-            invokeCloudablity(tailorApiAccessKey, tailorApiSecretKey, tailorApiDomain, accountIds)
+            invokeCloudablity(accountIds, stage)
 
     return accountIds
 
 
-def invokeCloudablity(access_key, secret_key, domain, account_ids):
-    boto3Session = boto3.Session()
-    region = boto3Session.region_name
-
-    auth = AWS4Auth(access_key, secret_key, region, 'execute-api')
+def invokeCloudablity(account_ids, stage):
 
     for i in account_ids:
-        tailorEndpoint = 'https://' + domain + '/cloudability/' + i
-        requests.put(tailorEndpoint, auth=auth)
+        print("Updating account", i)
+
+        # Build Lambda invoke payload
+        payload = {
+            "body-json": {},
+            "params": {
+                "path": {
+                    "accountId": i
+                },
+                "querystring": {},
+                "header": {}
+            },
+            "stage-variables": {
+                "stage": stage
+            },
+            "context": {
+                "resource-path": "/cloudability/{accountId}",
+            }
+        }
+
+        # Call Lambda
+        awslambda.invoke(
+            FunctionName='talr-accountupdate-cloudability-' + stage,
+            InvocationType='Event',
+            Payload=json.dumps(payload),
+        )
 
     return
 
