@@ -4,7 +4,6 @@ from __future__ import (absolute_import, division, print_function, unicode_liter
 import json
 import logging
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
 import os
 import sys
 from base64 import b64decode
@@ -41,12 +40,28 @@ def handler(event, context):
 
     for i in scanCbInfo['Items']:
         tailorApiAccessKey, tailorApiSecretKey = getTailorCreds(cbInfo, i['accountCbAlias'])
-        accountIds = getAccountIds(tailorApiAccessKey, tailorApiSecretKey, tailorApiDomain)
+        accountIds = getAccountIds(tailorApiAccessKey, tailorApiSecretKey, tailorApiDomain, i['accountCbAlias'])
+
+        if event['api'] == 'cloudability':
+            invokeCloudablity(tailorApiAccessKey, tailorApiSecretKey, tailorApiDomain, accountIds)
 
     return accountIds
 
 
-def getAccountIds(access_key, secret_key, domain):
+def invokeCloudablity(access_key, secret_key, domain, account_ids):
+    boto3Session = boto3.Session()
+    region = boto3Session.region_name
+
+    auth = AWS4Auth(access_key, secret_key, region, 'execute-api')
+
+    for i in account_ids:
+        tailorEndpoint = 'https://' + domain + '/cloudability/' + i
+        requests.put(tailorEndpoint, auth=auth)
+
+    return
+
+
+def getAccountIds(access_key, secret_key, domain, cb_alias):
 
     boto3Session = boto3.Session()
     region = boto3Session.region_name
@@ -54,12 +69,12 @@ def getAccountIds(access_key, secret_key, domain):
     tailorEndpoint = 'https://' + domain + '/accounts/ids'
     auth = AWS4Auth(access_key, secret_key, region, 'execute-api')
     headers = {
-        'host': 'api.tailor.autodesk.com',
-        'accountCbAlias': 'eis-main'
+        'host': domain,
+        'accountCbAlias': cb_alias
     }
     tailorResponse = requests.get(tailorEndpoint, auth=auth, headers=headers)
 
-    return json.loads(tailorResponse.content)
+    return json.loads(tailorResponse.content)['accountIds']
 
 
 def getTailorCreds(cb_object, cb_alias):

@@ -1014,7 +1014,7 @@ Resources:
             CodeUri: ./sam/functions/talr-poll-accountcompliance
             Handler: handler.handler
             MemorySize: 128
-            Timeout: 60
+            Timeout: 300
             Role:
                 Fn::GetAtt:
                     - iamCoreFunctionsRolesStack
@@ -1024,7 +1024,7 @@ Resources:
             #         Type: Schedule
             #         Properties:
             #             Schedule: cron(20 23 * * ? *)
-            #             Input: '{ "accountUpdate": "cloudtrail" }'
+            #             Input: '{ "api": "cloudtrail" }'
             Environment:
                 Variables:
                     TAILOR_TABLENAME_CBINFO:
