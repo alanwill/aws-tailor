@@ -40,8 +40,8 @@ Resources:
                     AttributeName: accountEmailAddress
                     KeyType: HASH
             ProvisionedThroughput:
-                ReadCapacityUnits: '5'
-                WriteCapacityUnits: '5'
+                ReadCapacityUnits: '1'
+                WriteCapacityUnits: '1'
             GlobalSecondaryIndexes:
                 -
                     IndexName: gsiRequestId
@@ -52,8 +52,8 @@ Resources:
                     Projection:
                         ProjectionType: KEYS_ONLY
                     ProvisionedThroughput:
-                        ReadCapacityUnits: '5'
-                        WriteCapacityUnits: '2'
+                        ReadCapacityUnits: '1'
+                        WriteCapacityUnits: '1'
                 -
                     IndexName: gsiAccountId
                     KeySchema:
@@ -63,8 +63,8 @@ Resources:
                     Projection:
                         ProjectionType: ALL
                     ProvisionedThroughput:
-                        ReadCapacityUnits: '5'
-                        WriteCapacityUnits: '2'
+                        ReadCapacityUnits: '1'
+                        WriteCapacityUnits: '1'
             TableName: !Join [ "-", [ "talr-accountInfo", !Ref stage ] ]
     dynamodbTableTaskStatus:
         Type: AWS::DynamoDB::Table
