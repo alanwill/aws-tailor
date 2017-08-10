@@ -1015,6 +1015,7 @@ Resources:
             Handler: handler.handler
             MemorySize: 128
             Timeout: 300
+            Tracing: Active
             Role:
                 Fn::GetAtt:
                     - iamCoreFunctionsRolesStack

@@ -13,6 +13,7 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(currentdir, "./vendored"))
 
 # Modules downloaded into the vendored directory
+import aws-xray-sdk
 import requests
 from requests_aws4auth import AWS4Auth
 
@@ -47,9 +48,9 @@ def handler(event, context):
         if event['api'] == 'cloudability':
             invokeCloudablity(accountIds, stage)
 
-    return accountIds
+    return
 
-
+@xray_recorder.capture()
 def invokeCloudablity(account_ids, stage):
 
     for i in account_ids:
@@ -82,7 +83,7 @@ def invokeCloudablity(account_ids, stage):
 
     return
 
-
+@xray_recorder.capture()
 def getAccountIds(access_key, secret_key, domain, cb_alias):
 
     boto3Session = boto3.Session()
@@ -98,7 +99,7 @@ def getAccountIds(access_key, secret_key, domain, cb_alias):
 
     return json.loads(tailorResponse.content)['accountIds']
 
-
+@xray_recorder.capture()
 def getTailorCreds(cb_object, cb_alias):
     getCbInfo = cb_object.get_item(
         Key={
