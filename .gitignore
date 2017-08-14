@@ -4,6 +4,7 @@
 
 # User-specific stuff:
 .idea/
+.vscode/
 vendored/
 sam-output.yaml
 cfn-config.json
