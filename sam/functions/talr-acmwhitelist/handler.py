@@ -21,7 +21,6 @@ log.setLevel(logging.DEBUG)
 # Initializing AWS services
 dynamodb = boto3.resource('dynamodb')
 sts = boto3.client('sts')
-support = boto3.client('support')
 
 
 def handler(event, context):
@@ -61,12 +60,25 @@ def handler(event, context):
         }
     )
     accountDomainName = getCbInfo['Item']['accountDomainName']
+    accountCbId = getCbInfo['Item']['accountCbId']
     accountSupportTeamEmail = getCbInfo['Item']['accountSupportTeamEmail']
 
     if accountTagEnvironment != 'tst':
 
+        # Initialize credentials for linked account
+        laCredentials = initialize_la_services(account_cb_id=accountCbId, la_account_id=laAccountId)
+
+        # Initialize Support client with Linked Account credentials
+        laSupport = boto3.client(
+            'config',
+            aws_access_key_id=laCredentials[0],
+            aws_secret_access_key=laCredentials[1],
+            aws_session_token=laCredentials[2],
+            region_name='us-east-1'
+        )
+
         # Create case in Payer Account requested Enterprise Support on Linked Account
-        createCase = support.create_case(
+        createCase = laSupport.create_case(
             subject='Whitelist request',
             serviceCode='amazon-acm-service',
             severityCode='normal',
@@ -108,3 +120,42 @@ def handler(event, context):
         )
 
     return
+
+
+def initialize_la_services(account_cb_id, la_account_id):
+
+    """
+
+    :param account_cb_id: Account number of the consolidated billing (payer) account
+    :param la_account_id: Account number of the Linked Account
+    :return: access key, secret key and session token used to assume a session into the Linked Account.
+    """
+
+    # Payer account credentials
+    payerAssumeRole = sts.assume_role(
+        RoleArn="arn:aws:iam::" + account_cb_id + ":role/tailor",
+        RoleSessionName="talrIamPayerAssumeRole"
+    )
+    payerCredentials = payerAssumeRole['Credentials']
+    payer_aws_access_key_id = payerCredentials['AccessKeyId']
+    payer_aws_secret_access_key = payerCredentials['SecretAccessKey']
+    payer_aws_session_token = payerCredentials['SessionToken']
+
+    # Linked account credentials
+    laSts = boto3.client(
+        'sts',
+        aws_access_key_id=payer_aws_access_key_id,
+        aws_secret_access_key=payer_aws_secret_access_key,
+        aws_session_token=payer_aws_session_token,
+    )
+
+    laAssumeRole = laSts.assume_role(
+        RoleArn="arn:aws:iam::" + la_account_id + ":role/PayerAccountAccessRole",
+        RoleSessionName="talrIamLaAssumeRole"
+    )
+    laCredentials = laAssumeRole['Credentials']
+    la_aws_access_key_id = laCredentials['AccessKeyId']
+    la_aws_secret_access_key = laCredentials['SecretAccessKey']
+    la_aws_session_token = laCredentials['SessionToken']
+
+    return la_aws_access_key_id, la_aws_secret_access_key, la_aws_session_token
