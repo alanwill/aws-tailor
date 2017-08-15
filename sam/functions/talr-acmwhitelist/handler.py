@@ -125,7 +125,6 @@ def handler(event, context):
 def initialize_la_services(account_cb_id, la_account_id):
 
     """
-
     :param account_cb_id: Account number of the consolidated billing (payer) account
     :param la_account_id: Account number of the Linked Account
     :return: access key, secret key and session token used to assume a session into the Linked Account.
