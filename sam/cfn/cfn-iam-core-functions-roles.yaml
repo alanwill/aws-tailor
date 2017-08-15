@@ -3212,7 +3212,25 @@ Resources:
                             Fn::Join: [ "", [!Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/", !Ref dynamodbTableNameTalrCbInfo ]]
             Roles:
                 - Ref: iamRoleLambdaTalrAcmwhitelist
-
+    iamPolicyLambdaTalrAcmwhitelist3:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: AssumeRole
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - sts:AssumeRole
+                    Resource: arn:aws:iam::*:role/tailor
+                -
+                    Effect: Allow
+                    Action:
+                        - sts:AssumeRole
+                    Resource: arn:aws:iam::*:role/PayerAccountAccessRole
+            Roles:
+                - Ref: iamRoleLambdaTalrAcmwhitelist
 Outputs:
     iamRoleArnLambdaTalrReceptionist:
         Description: talr-receptionist IAM role arn
