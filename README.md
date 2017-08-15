@@ -367,6 +367,7 @@ This function receives a payload from the talr-notify-request SNS topic which in
 
 Tailor's APIs are described in Postman collections, click on the button below to import them and start using the APIs immediately.
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/99f783311bab4dc4a16166b3bc5485bc)](https://www.codacy.com/app/alanwill/aws-tailor?utm_source=github.com&utm_medium=referral&utm_content=alanwill/aws-tailor&utm_campaign=badger)
 [![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/6a04c161fa9d76ce0339)
 
 ### POST /account
