@@ -70,7 +70,7 @@ def handler(event, context):
 
         # Initialize Support client with Linked Account credentials
         laSupport = boto3.client(
-            'config',
+            'support',
             aws_access_key_id=laCredentials[0],
             aws_secret_access_key=laCredentials[1],
             aws_session_token=laCredentials[2],
