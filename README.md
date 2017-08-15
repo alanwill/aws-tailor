@@ -1,3 +1,5 @@
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/99f783311bab4dc4a16166b3bc5485bc)](https://www.codacy.com/app/alanwill/aws-tailor?utm_source=github.com&utm_medium=referral&utm_content=alanwill/aws-tailor&utm_campaign=badger)
+
 ## Tailor - the AWS Account Provisioning Service
 
 <p align="center"><img src="assets/tailor-logo.png" alt="Tailor Logo" width="300"></p>
@@ -366,7 +368,6 @@ This function receives a payload from the talr-notify-request SNS topic which in
 ## API Reference
 
 Tailor's APIs are described in Postman collections, click on the button below to import them and start using the APIs immediately.
-
 [![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/6a04c161fa9d76ce0339)
 
 ### POST /account
