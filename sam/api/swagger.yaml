@@ -303,7 +303,7 @@ paths:
       x-amazon-apigateway-integration:
         responses:
           default:
-            statusCode: "202"
+            statusCode: "200"
           .*Forbidden.*:
             statusCode: "403"
             responseTemplates:

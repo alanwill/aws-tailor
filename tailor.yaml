@@ -481,6 +481,42 @@ Resources:
                         Fn::GetAtt:
                             - dynamodbTablesStack
                             - Outputs.dynamodbTableNameTalrAccountInfo
+    talrAcmwhitelistFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-acmwhitelist", !Ref stage ] ]
+            Description: Creates support case requesting Enterprise Support enablement
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-acmwhitelist
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 60
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrAcmwhitelist
+            Events:
+                talrDispatchRequest:
+                    Type: SNS
+                    Properties:
+                        Topic:
+                            Fn::GetAtt:
+                                - snsTopicsStack
+                                - Outputs.snsArnTalrDispatchRequest
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_TASKSTATUS:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrTaskStatus
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
     talrCloudabilityFunction:
         Type: AWS::Serverless::Function
         Properties:
@@ -1005,6 +1041,38 @@ Resources:
                         Fn::GetAtt:
                             - dynamodbTablesStack
                             - Outputs.dynamodbTableNameTalrAccountInfo
+    talrPollAccountcomplianceFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            FunctionName: !Join [ "-", [ "talr-poll-accountcompliance", !Ref stage ] ]
+            Description: Applies account update APIs across all active accounts
+            Runtime: python2.7
+            CodeUri: ./sam/functions/talr-poll-accountcompliance
+            Handler: handler.handler
+            MemorySize: 128
+            Timeout: 300
+            Tracing: Active
+            Role:
+                Fn::GetAtt:
+                    - iamCoreFunctionsRolesStack
+                    - Outputs.iamRoleArnLambdaTalrPollAccountCompliance
+            # Events:
+            #     cloudtrail:
+            #         Type: Schedule
+            #         Properties:
+            #             Schedule: cron(20 23 * * ? *)
+            #             Input: '{ "api": "cloudtrail" }'
+            Environment:
+                Variables:
+                    TAILOR_TABLENAME_CBINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrCbInfo
+                    TAILOR_TABLENAME_ACCOUNTINFO:
+                        Fn::GetAtt:
+                            - dynamodbTablesStack
+                            - Outputs.dynamodbTableNameTalrAccountInfo
+                    TAILOR_API_DOMAINNAME: !Ref apiDomainName
     talrPollClaFunction:
         Type: AWS::Serverless::Function
         Properties:

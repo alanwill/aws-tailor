@@ -3046,6 +3046,191 @@ Resources:
                     Resource: arn:aws:iam::*:role/tailor
             Roles:
                 - Ref: iamRoleLambdaTalrPollConfigCompliance
+    iamRoleLambdaTalrPollAccountCompliance:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                        Effect: Allow
+                        Principal:
+                            Service:
+                                - lambda.amazonaws.com
+                        Action:
+                            - sts:AssumeRole
+            Path: "/"
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+    iamPolicyLambdaTalrPollAccountCompliance1:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: BasicLogging
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - logs:CreateLogGroup
+                        - logs:CreateLogStream
+                        - logs:PutLogEvents
+                    Resource:
+                        !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+            Roles:
+                - Ref: iamRoleLambdaTalrPollAccountCompliance
+    iamPolicyLambdaTalrPollAccountCompliance2:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: DynamodbAccess
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                        Effect: Allow
+                        Action:
+                            - dynamodb:Scan
+                            - dynamodb:UpdateItem
+                            - dynamodb:PutItem
+                        Resource:
+                            Fn::Join: [ "", [!Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/", !Ref dynamodbTableNameTalrAccountInfo ]]
+
+                    -
+                        Effect: Allow
+                        Action:
+                            - dynamodb:GetItem
+                            - dynamodb:Scan
+                        Resource:
+                            Fn::Join: [ "", [!Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/", !Ref dynamodbTableNameTalrCbInfo ]]
+            Roles:
+                - Ref: iamRoleLambdaTalrPollAccountCompliance
+    iamPolicyLambdaTalrPollAccountCompliance3:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: AssumeRole
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - sts:AssumeRole
+                    Resource: arn:aws:iam::*:role/tailor
+                -
+                    Effect: Allow
+                    Action:
+                        - sts:AssumeRole
+                    Resource: arn:aws:iam::*:role/PayerAccountAccessRole
+            Roles:
+                - Ref: iamRoleLambdaTalrPollAccountCompliance
+    iamPolicyLambdaTalrPollAccountCompliance4:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: DecryptAccess
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - kms:Decrypt
+                    Resource:
+                        !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${kmsKeyId}
+            Roles:
+                - Ref: iamRoleLambdaTalrPollAccountCompliance
+    iamPolicyLambdaTalrPollAccountCompliance5:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: LambdaAccess
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - lambda:InvokeFunction
+                    Resource:
+                        !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:talr-accountupdate-cloudability-${stage}"
+            Roles:
+                - Ref: iamRoleLambdaTalrPollAccountCompliance
+    iamRoleLambdaTalrAcmwhitelist:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                        Effect: Allow
+                        Principal:
+                            Service:
+                                - lambda.amazonaws.com
+                        Action:
+                            - sts:AssumeRole
+            Path: "/"
+    iamPolicyLambdaTalrAcmwhitelist1:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: BasicLogging
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - logs:CreateLogGroup
+                        - logs:CreateLogStream
+                        - logs:PutLogEvents
+                    Resource:
+                        !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+            Roles:
+                - Ref: iamRoleLambdaTalrAcmwhitelist
+    iamPolicyLambdaTalrAcmwhitelist2:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: DynamodbAccess
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                        Effect: Allow
+                        Action:
+                            - dynamodb:GetItem
+                            - dynamodb:PutItem
+                        Resource:
+                            Fn::Join: [ "", [!Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/", !Ref dynamodbTableNameTalrTaskStatus ]]
+                    -
+                        Effect: Allow
+                        Action:
+                            - dynamodb:GetItem
+                        Resource:
+                            Fn::Join: [ "", [!Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/", !Ref dynamodbTableNameTalrAccountInfo ]]
+                    -
+                        Effect: Allow
+                        Action:
+                            - dynamodb:GetItem
+                        Resource:
+                            Fn::Join: [ "", [!Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/", !Ref dynamodbTableNameTalrCbInfo ]]
+            Roles:
+                - Ref: iamRoleLambdaTalrAcmwhitelist
+    iamPolicyLambdaTalrAcmwhitelist3:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: AssumeRole
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - sts:AssumeRole
+                    Resource: arn:aws:iam::*:role/tailor
+                -
+                    Effect: Allow
+                    Action:
+                        - sts:AssumeRole
+                    Resource: arn:aws:iam::*:role/PayerAccountAccessRole
+            Roles:
+                - Ref: iamRoleLambdaTalrAcmwhitelist
 Outputs:
     iamRoleArnLambdaTalrReceptionist:
         Description: talr-receptionist IAM role arn
@@ -3104,6 +3289,9 @@ Outputs:
     iamRoleArnLambdaTalrEntsupport:
         Description: talr-entsupport IAM role arn
         Value: !GetAtt iamRoleLambdaTalrEntsupport.Arn
+    iamRoleArnLambdaTalrAcmwhitelist:
+        Description: talr-acmwhitelist IAM role arn
+        Value: !GetAtt iamRoleLambdaTalrAcmwhitelist.Arn
     iamRoleArnLambdaTalrVpc:
         Description: talr-vpc IAM role arn
         Value: !GetAtt iamRoleLambdaTalrVpc.Arn
@@ -3140,6 +3328,9 @@ Outputs:
     iamRoleArnLambdaTalrPollCla:
         Description: talr-poll-cla IAM role arn
         Value: !GetAtt iamRoleLambdaTalrPollCla.Arn
+    iamRoleArnLambdaTalrPollAccountCompliance:
+        Description: talr-poll-accountcompliance IAM role arn
+        Value: !GetAtt iamRoleLambdaTalrPollAccountCompliance.Arn
     iamRoleArnLambdaTalrRequestStatus:
         Description: talr-requeststatus IAM role arn
         Value: !GetAtt iamRoleLambdaTalrRequestStatus.Arn
