@@ -135,7 +135,7 @@ def handler(event, context):
     # Get ConfigS3Access policy from S3
     getConfigS3AccessFromS3 = s3.get_object(
         Bucket=accountTailorConfigBucket,
-        Key='iam/managed-policies/' + accountCompanyCode.capitalize() + 'ConfigS3Access.json'
+        Key='iam/managed-policies/' + accountCompanyCode.upper() + 'ConfigS3Access.json'
     )
     configS3AccessPolicy = json.loads(getConfigS3AccessFromS3['Body'].read())
     configS3AccessPolicy['Statement'][0]['Resource'].append("arn:aws:s3:::" + accountConfigS3Bucket + "/*")

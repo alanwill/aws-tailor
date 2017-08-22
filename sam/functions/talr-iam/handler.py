@@ -342,7 +342,7 @@ def handler(event, context):
     )
     getApplicationAdminDenyPolicy = s3.get_object(
         Bucket=accountTailorConfigBucket,
-        Key='iam/managed-policies/' + accountCompanyCode.capitalize() + 'ApplicationAdminDeny.json'
+        Key='iam/managed-policies/' + accountCompanyCode.upper() + 'ApplicationAdminDeny.json'
     )
     applicationAdminDenyPolicy = getApplicationAdminDenyPolicy['Body'].read()
 
@@ -357,7 +357,7 @@ def handler(event, context):
     )
     getApplicationAdminIamAllowPolicy = s3.get_object(
         Bucket=accountTailorConfigBucket,
-        Key='iam/managed-policies/' + accountCompanyCode.capitalize() + 'ApplicationAdminIamAllow.json'
+        Key='iam/managed-policies/' + accountCompanyCode.upper() + 'ApplicationAdminIamAllow.json'
     )
     applicationAdminIamAllowPolicy = getApplicationAdminIamAllowPolicy['Body'].read()
 
@@ -402,7 +402,7 @@ def handler(event, context):
     )
     getDatabaseAdminDenyPolicy = s3.get_object(
         Bucket=accountTailorConfigBucket,
-        Key='iam/managed-policies/' + accountCompanyCode.capitalize() + 'DatabaseAdminDeny.json'
+        Key='iam/managed-policies/' + accountCompanyCode.upper() + 'DatabaseAdminDeny.json'
     )
     databaseAdminDenyPolicy = getDatabaseAdminDenyPolicy['Body'].read()
 
