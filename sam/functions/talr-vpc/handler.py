@@ -74,7 +74,7 @@ def handler(event, context):
         return "NipapDaemonInstance not ready."
 
     # Update task start status
-    updateStatus = taskStatus.put_item(
+    taskStatus.put_item(
         Item={
             "requestId": requestId,
             "eventTimestamp": str(time.time()),
@@ -113,7 +113,6 @@ def handler(event, context):
             'accountCbAlias': accountCbAlias
         }
     )
-    accountCompanyName = getCbInfo['Item']['accountCompanyName']
     accountCbId = getCbInfo['Item']['accountCbId']
     accountTailorConfigBucket = getCbInfo['Item']['accountTailorConfigBucket']
     accountVpcMasterNetworks = getCbInfo['Item']['accountVpcMasterNetworks']
@@ -147,7 +146,7 @@ def handler(event, context):
                                  vpc_prefix=accountVpcPrefix.lstrip('/'))
 
             # Write vpcCidr to talr-accountInfo table
-            putVpcCidr = accountInfo.update_item(
+            accountInfo.update_item(
                 Key={
                     'accountEmailAddress': accountEmailAddress,
                 },
@@ -204,7 +203,7 @@ def handler(event, context):
     delete_nipap_daemon_stack(cfnIncomingMessage['StackName'])
 
     # Update task end status
-    updateStatus = taskStatus.put_item(
+    taskStatus.put_item(
         Item={
             "requestId": requestId,
             "eventTimestamp": str(time.time()),
@@ -408,7 +407,7 @@ def initialize_la_services(account_cb_id, la_account_id):
         aws_session_token=la_aws_session_token,
     )
 
-    return (la_aws_access_key_id, la_aws_secret_access_key, la_aws_session_token)
+    return la_aws_access_key_id, la_aws_secret_access_key, la_aws_session_token
 
 
 def delete_default_vpcs(la_aws_access_key_id, la_aws_secret_access_key, la_aws_session_token):
@@ -472,18 +471,18 @@ def delete_default_vpcs(la_aws_access_key_id, la_aws_secret_access_key, la_aws_s
             )
 
             # Detach the internet gateway for the default VPC in the given region
-            detachInternetGateway = laEc2Region.detach_internet_gateway(
+            laEc2Region.detach_internet_gateway(
                 InternetGatewayId=describeInternetGateway['InternetGateways'][0]['InternetGatewayId'],
                 VpcId=describeVpcs['Vpcs'][0]['VpcId']
             )
 
             # Delete the internet gateway for the default VPC in the given region
-            deleteInternetGateway = laEc2Region.delete_internet_gateway(
+            laEc2Region.delete_internet_gateway(
                 InternetGatewayId=describeInternetGateway['InternetGateways'][0]['InternetGatewayId']
             )
 
             # Delete the default VPC in the given region
-            deleteVpc = laEc2Region.delete_vpc(
+            laEc2Region.delete_vpc(
                 VpcId=describeVpcs['Vpcs'][0]['VpcId']
             )
     except Exception as e:
@@ -510,7 +509,7 @@ def check_for_core(region, la_aws_access_key_id, la_aws_secret_access_key, la_aw
 
 
 def delete_nipap_daemon_stack(stack_name):
-    delete_stack = cloudformation.delete_stack(
+    cloudformation.delete_stack(
         StackName=stack_name
     )
     return "nipap daemon deleted"
