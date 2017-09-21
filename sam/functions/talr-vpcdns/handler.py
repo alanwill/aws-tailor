@@ -255,8 +255,7 @@ def add_dhcp_optionset(la_credentials, la_vpc_id, dns_server_1, dns_server_2, re
     if region == 'us-east-1':
         domainName = 'ec2.internal'
     else:
-        domainName = region + 'compute.internal' \
-                              ''
+        domainName = region + '.compute.internal'
     dhcpOptionsset = laEc2.create_dhcp_options(
         DhcpConfigurations=[
             {
