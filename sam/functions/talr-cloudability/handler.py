@@ -85,7 +85,7 @@ def handler(event, context):
             "period": "start",
             "taskName": "CLOUDABILITY",
             "function": "talr-cloudability",
-            "message": incomingMessage
+            "message": accountEmailAddress
         }
     )
 
@@ -191,7 +191,7 @@ def handler(event, context):
             "period": "end",
             "taskName": "CLOUDABILITY",
             "function": "talr-cloudability",
-            "message": incomingMessage
+            "message": accountEmailAddress
         }
     )
 
