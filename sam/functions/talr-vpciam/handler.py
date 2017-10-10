@@ -169,7 +169,7 @@ def handler(event, context):
         # Pull IAM Deny policy from S3
         getInternetSubnetDenyPolicy = s3.get_object(
             Bucket=accountTailorConfigBucket,
-            Key='iam/managed-policies/' + accountCompanyCode.capitalize() + 'Ec2InternetSubnetDeny.json'
+            Key='iam/managed-policies/' + accountCompanyCode.upper() + 'Ec2InternetSubnetDeny.json'
         )
         internetSubnetDenyPolicy = json.loads(getInternetSubnetDenyPolicy['Body'].read())
         policyExists = False
