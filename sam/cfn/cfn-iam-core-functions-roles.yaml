@@ -287,6 +287,21 @@ Resources:
                     Resource: arn:aws:iam::*:role/tailor
             Roles:
                 - Ref: iamRoleLambdaTalrAccountUpdateVpcflowlogs
+    iamPolicyLambdaTalrAccountUpdateVpcflowlogs4:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: LambdaAccess
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -
+                    Effect: Allow
+                    Action:
+                        - lambda:InvokeFunction
+                    Resource:
+                        !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:talr-vpcflowlogs-${stage}"
+            Roles:
+                - Ref: iamRoleLambdaTalrAccountUpdateVpcflowlogs
     iamRoleLambdaTalrCla:
         Type: AWS::IAM::Role
         Properties:
