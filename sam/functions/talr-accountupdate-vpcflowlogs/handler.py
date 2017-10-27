@@ -56,7 +56,7 @@ def handler(event, context):
         accountId = event['body-json']['accountId']
         stackName = event['body-json']['stackName']
         accountCbAlias = event['params']['header']['accountCbAlias']
-        functionAlias = event['stage-variables']['functionAlias']
+        stage = event['stage-variables']['stage']
 
         # Check if account already exists
         getAccountId = accountInfo.scan(
@@ -115,11 +115,10 @@ def handler(event, context):
             payload = {"Records": [{"Sns": {"Message": message}}]}
 
             # Call Lambda
-            invokeVpcFlowLogs = awslambda.invoke(
-                FunctionName='talr-vpcflowlogs',
+            awslambda.invoke(
+                FunctionName='talr-vpcflowlogs-' + stage,
                 InvocationType='Event',
-                Payload=json.dumps(payload),
-                Qualifier=functionAlias
+                Payload=json.dumps(payload)
             )
 
             return {"code": "2020", "message": "Request Accepted", "requestId": requestId}
