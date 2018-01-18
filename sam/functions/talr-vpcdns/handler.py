@@ -43,8 +43,8 @@ def handler(event, context):
     # to a dictionary first
     cfnIncomingMessage = {}
     for line in incomingMessage:
-        key = line.replace('\n', '').partition("=")[0]
-        value = line.replace('\n', '').partition("=")[2].lstrip("'").rstrip("'")
+        key = line.partition("=")[0]
+        value = line.partition("=")[2].lstrip("'").rstrip("'")
         cfnIncomingMessage[key] = value
     print("cfnIncomingMessage:", cfnIncomingMessage)
 
