@@ -77,7 +77,6 @@ def handler(event, context):
             return "Nothing to do"
 
     # Look up the account info from the known accountId
-    log.debug(accountLaId)
     getAccountId = accountInfo.query(
         IndexName='gsiAccountId',
         KeyConditionExpression=Key('accountId').eq(accountLaId)
@@ -363,8 +362,6 @@ def get_dns_server_ips(cs_credentials, routes_threshold, region):
             dnsStacks.append({'stackId': i['StackId'], 'vpcId': vpcId, 'dnsA': dnsA, 'dnsB': dnsB})
         else:
             continue
-
-        print(dnsStacks)
 
     noVpcs = 0
     for i in dnsStacks:
