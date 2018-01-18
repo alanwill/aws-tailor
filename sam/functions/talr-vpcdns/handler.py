@@ -43,17 +43,17 @@ def handler(event, context):
     # to a dictionary first
     cfnIncomingMessage = {}
     for line in incomingMessage:
-        key = line.partition("=")[0]
-        value = line.partition("=")[2].lstrip("'").rstrip("'")
+        key = line.replace('\n', '').partition("=")[0]
+        value = line.replace('\n', '').partition("=")[2].lstrip("'").rstrip("'")
         cfnIncomingMessage[key] = value
     print("cfnIncomingMessage:", cfnIncomingMessage)
 
     # Check each incoming event and determine whether the Stack has completed successfully, only proceed if yes
     # otherwise exit.
     try:
-        if "arn:aws:cloudformation:" in cfnIncomingMessage['PhysicalResourceId'] and \
+        if "arn:aws:cloudformation:" in cfnIncomingMessage['StackId'] and \
                         cfnIncomingMessage['ResourceStatus'] == "CREATE_COMPLETE" and \
-                        cfnIncomingMessage['LogicalResourceId'] == "core":
+                        cfnIncomingMessage['StackName'] == "core":
             stackId = cfnIncomingMessage['StackId']
             region = stackId.split(":")[3]
             physicalResourceId = cfnIncomingMessage['PhysicalResourceId']
@@ -77,6 +77,7 @@ def handler(event, context):
             return "Nothing to do"
 
     # Look up the account info from the known accountId
+    log.debug(accountLaId)
     getAccountId = accountInfo.query(
         IndexName='gsiAccountId',
         KeyConditionExpression=Key('accountId').eq(accountLaId)
@@ -302,7 +303,6 @@ def check_vpc_eligible(cs_credentials, vpc_id, routes_threshold, region):
             largeRouteTables.append({'routeTableId': i['RouteTableId'], 'routeCount': len(i['Routes'])})
         else:
             continue
-
     if len(largeRouteTables) >= 1:
         return False
     else:
@@ -363,6 +363,8 @@ def get_dns_server_ips(cs_credentials, routes_threshold, region):
             dnsStacks.append({'stackId': i['StackId'], 'vpcId': vpcId, 'dnsA': dnsA, 'dnsB': dnsB})
         else:
             continue
+
+        print(dnsStacks)
 
     noVpcs = 0
     for i in dnsStacks:
