@@ -51,9 +51,9 @@ def handler(event, context):
     # Check each incoming event and determine whether the Stack has completed successfully, only proceed if yes
     # otherwise exit.
     try:
-        if "arn:aws:cloudformation:" in cfnIncomingMessage['PhysicalResourceId'] and \
+        if "arn:aws:cloudformation:" in cfnIncomingMessage['StackId'] and \
                         cfnIncomingMessage['ResourceStatus'] == "CREATE_COMPLETE" and \
-                        cfnIncomingMessage['LogicalResourceId'] == "core":
+                        cfnIncomingMessage['StackName'] == "core":
             stackId = cfnIncomingMessage['StackId']
             region = stackId.split(":")[3]
             physicalResourceId = cfnIncomingMessage['PhysicalResourceId']
@@ -302,7 +302,6 @@ def check_vpc_eligible(cs_credentials, vpc_id, routes_threshold, region):
             largeRouteTables.append({'routeTableId': i['RouteTableId'], 'routeCount': len(i['Routes'])})
         else:
             continue
-
     if len(largeRouteTables) >= 1:
         return False
     else:
