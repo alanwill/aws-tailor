@@ -90,82 +90,102 @@ def handler(event, context):
         accountEnvironmentList.append(i)
 
     # Input validation
+    testResults = {}
     accountCbAliasTest = True if "accountCbAlias" in event['body-json']['accountRequest'] and \
                                  event['body-json']['accountRequest']['accountCbAlias'] == accountCbAlias else False
     print("accountCbAliasTest is ", accountCbAliasTest)
+    testResults['accountCbAliasTest'] = accountCbAliasTest
     accountRegulatedTest = True if "accountRegulated" in event['body-json']['accountRequest'] and \
                                    event['body-json']['accountRequest']['accountRegulated'] is True or \
                                    event['body-json']['accountRequest']['accountRegulated'] is False else False
     print("accountRegulatedTest is ", accountRegulatedTest)
+    testResults['accountRegulatedTest'] = accountRegulatedTest
     accountVpcPrefixTest = True if "accountVpcPrefix" in event['body-json']['accountRequest'] and \
                                    re.search("^\/2([3-4]){1}$", event['body-json']['accountRequest']['accountVpcPrefix']) else False
     print("accountVpcPrefixTest is ", accountVpcPrefixTest)
+    testResults['accountVpcPrefixTest'] = accountVpcPrefixTest
     accountVpcAzCountTest = True if "accountVpcAzCount" in event['body-json']['accountRequest'] and \
                                     event['body-json']['accountRequest']['accountVpcAzCount'] == "2" or \
                                     event['body-json']['accountRequest']['accountVpcAzCount'] == "3" else False
     print("accountVpcAzCountTest is ", accountVpcAzCountTest)
+    testResults['accountVpcAzCountTest'] = accountVpcAzCountTest
     accountRegionTest = True if "accountRegion" in event['body-json']['accountRequest'] and \
                                 "us-east-1" in event['body-json']['accountRequest']['accountRegion'] or \
                                 "us-west-2" in event['body-json']['accountRequest']['accountRegion'] else False
     print("accountRegionTest is ", accountRegionTest)
+    testResults['accountRegionTest'] = accountRegionTest
     accountTagCostCenterTest = True if "accountTagCostCenter" in event['body-json']['accountRequest'] and \
                                        re.search("^\d{10}", event['body-json']['accountRequest']['accountTagCostCenter']) \
         else False
     print("accountTagCostCenterTest is ", accountTagCostCenterTest)
+    testResults['accountTagCostCenterTest'] = accountTagCostCenterTest
     accountTagLongProjectNameTest = True if "accountTagLongProjectName" in event['body-json']['accountRequest'] and \
                                             re.search("^(\D|\d){3,50}$",
                                                       event['body-json']['accountRequest']['accountTagLongProjectName']) else False
     print("accountTagLongProjectNameTest is ", accountTagLongProjectNameTest)
+    testResults['accountTagLongProjectNameTest'] = accountTagLongProjectNameTest
     accountTagShortProjectNameTest = True if "accountTagShortProjectName" in event['body-json']['accountRequest'] and \
                                              re.search("^[a-z0-9]{2,15}$",
                                                        event['body-json']['accountRequest']['accountTagShortProjectName']) else False
     print("accountTagShortProjectNameTest is ", accountTagShortProjectNameTest)
+    testResults['accountTagShortProjectNameTest'] = accountTagShortProjectNameTest
     accountTagEnvironmentTest = True if "accountTagEnvironment" in event['body-json']['accountRequest'] and \
                                         event['body-json']['accountRequest']['accountTagEnvironment'] in \
                                         accountEnvironmentList else False
     print("accountTagEnvironmentTest is ", accountTagEnvironmentTest)
+    testResults['accountTagEnvironmentTest'] = accountTagEnvironmentTest
     accountUserAccessListTest = True if "accountUserAccessList" in event['body-json']['accountRequest'] and \
                                         re.search("^(\[.*?\])", str(event['body-json']['accountRequest']['accountUserAccessList'])) \
         else False
     print("accountUserAccessListTest is ", accountUserAccessListTest)
+    testResults['accountUserAccessListTest'] = accountUserAccessListTest
     accountTechnicalContactFullNameTest = True if "accountTechnicalContactFullName" in event['body-json']['accountRequest'] and \
                                                   re.search("^([a-zA-Z0-9_-]| |[a-zA-Z0-9_-]){3,50}$",
                                                             event['body-json']['accountRequest']['accountTechnicalContactFullName']) \
         else False
     print("accountTechnicalContactFullNameTest is ", accountTechnicalContactFullNameTest)
+    testResults['accountTechnicalContactFullNameTest'] = accountTechnicalContactFullNameTest
     accountTechnicalContactUsernameTest = True if "accountTechnicalContactUsername" in event['body-json']['accountRequest'] and \
                                                   re.search("^([a-z_]){3,20}$",
                                                             event['body-json']['accountRequest']['accountTechnicalContactUsername']) \
         else False
     print("accountTechnicalContactUsernameTest is ", accountTechnicalContactUsernameTest)
+    testResults['accountTechnicalContactUsernameTest'] = accountTechnicalContactUsernameTest
     requestorFullNameTest = True if "requestorFullName" in event['body-json']['accountRequest'] and \
                                     re.search("^(\w| |\w){3,50}$", event['body-json']['accountRequest']['requestorFullName']) \
         else False
     print("requestorFullNameTest is ", requestorFullNameTest)
+    testResults['requestorFullNameTest'] = requestorFullNameTest
     requestorUsernameTest = True if "requestorUsername" in event['body-json']['accountRequest'] and \
                                     re.search("^([a-z_]){3,20}$", event['body-json']['accountRequest']['requestorUsername']) \
         else False
     print("requestorUsernameTest is ", requestorUsernameTest)
+    testResults['requestorUsernameTest'] = requestorUsernameTest
     requestorManagerTest = True if "requestorManager" in event['body-json']['accountRequest'] and \
                                    re.search("^([a-zA-Z0-9_-]| |[a-zA-Z0-9_-]){3,50}$", event['body-json']['accountRequest']['requestorManager']) \
         else False
     print("requestorManagerTest is ", requestorManagerTest)
+    testResults['requestorManagerTest'] = requestorManagerTest
     requestorDepartmentTest = True if "requestorDepartment" in event['body-json']['accountRequest'] and \
                                       re.search("^(\w| |\w|-|){3,100}$", event['body-json']['accountRequest']['requestorDepartment']) \
         else False
     print("requestorDepartmentTest is ", requestorDepartmentTest)
+    testResults['requestorDepartmentTest'] = requestorDepartmentTest
     requestorEmailAddressTest = True if "requestorEmailAddress" in event['body-json']['accountRequest'] and \
                                         re.search("^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$",
-                                                  event['body-json']['accountRequest']['requestorEmailAddress']) else False
+                                                  event['body-json']['accountRequest']['requestorEmailAddress'].lower()) else False
     print("requestorEmailAddressTest is ", requestorEmailAddressTest)
+    testResults['requestorEmailAddressTest'] = requestorEmailAddressTest
     externalTransactionIdTest = True if "externalTransactionId" in event['body-json']['accountRequest'] and \
                                         re.search("^(\D|\d){0,500}$",
                                                   event['body-json']['accountRequest']['externalTransactionId']) else False
     print("externalTransactionIdTest is ", externalTransactionIdTest)
+    testResults['externalTransactionIdTest'] = externalTransactionIdTest
     commentTest = True if "comment" in event['body-json']['accountRequest'] and \
                           re.search("^(\D|\d){0,200}$", event['body-json']['accountRequest']['comment']) else False
 
     print("commentTest is ", commentTest)
+    testResults['commentTest'] = commentTest
 
     # Check if externalTransactionId is blank
     if len(event['body-json']['accountRequest']['externalTransactionId']) == 0:
@@ -180,26 +200,9 @@ def handler(event, context):
         comment = event['body-json']['accountRequest']['comment']
 
     # Validate that all tests passed otherwise return error
-    if accountCbAliasTest is False or \
-            accountRegulatedTest is False or \
-            accountVpcPrefixTest is False or \
-            accountVpcAzCountTest is False or \
-            accountRegionTest is False or \
-            accountTagCostCenterTest is False or \
-            accountTagLongProjectNameTest is False or \
-            accountTagShortProjectNameTest is False or \
-            accountTagEnvironmentTest is False or \
-            accountUserAccessListTest is False or \
-            accountTechnicalContactFullNameTest is False or \
-            accountTechnicalContactUsernameTest is False or \
-            requestorFullNameTest is False or \
-            requestorUsernameTest is False or \
-            requestorManagerTest is False or \
-            requestorDepartmentTest is False or \
-            requestorEmailAddressTest is False or \
-            externalTransactionIdTest is False or \
-            commentTest is False:
-        raise Exception({"code": "4000", "message": "Bad request"})
+    for test, result in testResults.items():
+        if result is False:
+            raise Exception({"code": "4000", "message": "Failed " + test})
 
     # Event input variable assignment
     accountCbAlias = event['body-json']['accountRequest']['accountCbAlias']
@@ -218,7 +221,7 @@ def handler(event, context):
     requestorUsername = event['body-json']['accountRequest']['requestorUsername']
     requestorManager = event['body-json']['accountRequest']['requestorManager']
     requestorDepartment = event['body-json']['accountRequest']['requestorDepartment']
-    requestorEmailAddress = event['body-json']['accountRequest']['requestorEmailAddress']
+    requestorEmailAddress = event['body-json']['accountRequest']['requestorEmailAddress'].lower()
 
     getCbInfo = cbInfo.get_item(
         Key={
