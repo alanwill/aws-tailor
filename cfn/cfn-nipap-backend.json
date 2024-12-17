@@ -183,7 +183,8 @@
                 }, {
                     "Key": "purpose",
                     "Value": "DB backend for NIPAP IPAM tool"
-                }]
+                }],
+                "IAMDatabaseAuthenticationEnabled": true
             },
             "DeletionPolicy": "Snapshot"
         },
@@ -262,6 +263,4 @@
         }
 
     }
-
-
 }
