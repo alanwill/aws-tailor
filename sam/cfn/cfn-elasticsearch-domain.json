@@ -1,3 +1,4 @@
+```json
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Provisions Tailor ElasticSearch cluster",
@@ -61,6 +62,10 @@
                 "SnapshotOptions": {
                     "AutomatedSnapshotStartHour": 0
                 },
+                "EncryptionAtRestOptions": {
+                    "Enabled": true,
+                    "KmsKeyId": "alias/aws/es"
+                },
                 "Tags": [{
                     "Key": "Name",
                     "Value": "tailor-es"
@@ -86,3 +91,4 @@
         }
     }
 }
+```
