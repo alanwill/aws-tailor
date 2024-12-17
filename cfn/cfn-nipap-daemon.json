@@ -207,7 +207,8 @@
                     "ToPort": "1337",
                     "SourceSecurityGroupId": {
                         "Ref": "TailorComponentsSecurityGroup"
-                    }
+                    },
+                    "Description": "Allow traffic from TailorComponentsSecurityGroup on port 1337"
                 }],
                 "Tags": [{
                     "Key": "purpose",
@@ -241,6 +242,4 @@
             }
         }
     }
-
-
 }
