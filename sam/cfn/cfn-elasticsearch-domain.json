@@ -1,3 +1,4 @@
+```json
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Provisions Tailor ElasticSearch cluster",
@@ -44,7 +45,8 @@
                     }]
                 },
                 "AdvancedOptions": {
-                    "rest.action.multi.allow_explicit_index": "true"
+                    "rest.action.multi.allow_explicit_index": "true",
+                    "action.disable_index_lifecycle_management": "true"
                 },
                 "EBSOptions": {
                     "EBSEnabled": true,
@@ -60,6 +62,9 @@
                 "ElasticsearchVersion": "5.1",
                 "SnapshotOptions": {
                     "AutomatedSnapshotStartHour": 0
+                },
+                "LogPublishingOptions": {
+                    "AuditLogEnabled": true
                 },
                 "Tags": [{
                     "Key": "Name",
@@ -86,3 +91,4 @@
         }
     }
 }
+```
