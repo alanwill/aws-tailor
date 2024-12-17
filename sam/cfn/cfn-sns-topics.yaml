@@ -1,3 +1,4 @@
+```yaml
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Provisions Tailor SNS topics
 Parameters:
@@ -9,21 +10,25 @@ Resources:
     Properties:
       DisplayName: !Join [ "-", [ "talr-ops-notifications", !Ref stage ] ]
       TopicName: !Join [ "-", [ "talr-ops-notifications", !Ref stage ] ]
+      KmsMasterKeyId: !Ref KmsKey
   snsTalrClaRequest:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Join [ "-", [ "talr-cla-request", !Ref stage ] ]
       TopicName: !Join [ "-", [ "talr-cla-request", !Ref stage ] ]
+      KmsMasterKeyId: !Ref KmsKey
   snsTalrClaResponse:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Join [ "-", [ "talr-cla-response", !Ref stage ] ]
       TopicName: !Join [ "-", [ "talr-cla-response", !Ref stage ] ]
+      KmsMasterKeyId: !Ref KmsKey
   snsTalrVpcCfnResponse:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Join [ "-", [ "talr-vpccfn-response", !Ref stage ] ]
       TopicName: !Join [ "-", [ "talr-vpccfn-response", !Ref stage ] ]
+      KmsMasterKeyId: !Ref KmsKey
   snsPolicyTalrVpcCfnResponse:
     Type: AWS::SNS::TopicPolicy
     Properties:
@@ -44,21 +49,25 @@ Resources:
     Properties:
       DisplayName: !Join [ "-", [ "talr-nipapcfn-response", !Ref stage ] ]
       TopicName: !Join [ "-", [ "talr-nipapcfn-response", !Ref stage ] ]
+      KmsMasterKeyId: !Ref KmsKey
   snsTalrDispatchRequest:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Join [ "-", [ "talr-dispatch-request", !Ref stage ] ]
       TopicName: !Join [ "-", [ "talr-dispatch-request", !Ref stage ] ]
+      KmsMasterKeyId: !Ref KmsKey
   snsTalrNotifyRequest:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Join [ "-", [ "talr-notify-request", !Ref stage ] ]
       TopicName: !Join [ "-", [ "talr-notify-request", !Ref stage ] ]
+      KmsMasterKeyId: !Ref KmsKey
   snsTalrEventsPush:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: !Join [ "-", [ "talr-events-push", !Ref stage ] ]
       TopicName: !Join [ "-", [ "talr-events-push", !Ref stage ] ]
+      KmsMasterKeyId: !Ref KmsKey
 Outputs:
   snsTopicNameTalrOpsNotifications:
     Description: SNS topic name for talr-ops-notifications
@@ -108,3 +117,8 @@ Outputs:
   snsArnTalrEventsPush:
     Description: SNS Arn for talr-events-push
     Value: !Ref 'snsTalrEventsPush'
+Resources:
+  KmsKey:
+    Type: AWS::KMS::Key
+    Description: Key used to encrypt SNS topics
+```
