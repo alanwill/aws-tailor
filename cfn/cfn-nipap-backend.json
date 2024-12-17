@@ -43,7 +43,6 @@
             "Type": "AWS::EC2::VPC::Id",
             "ConstraintDescription": "Must be the VPC ID of the VPC where you're building this application in the form of vpc-abcdefgh"
         }
-
     },
 
     "Mappings": {
@@ -183,7 +182,11 @@
                 }, {
                     "Key": "purpose",
                     "Value": "DB backend for NIPAP IPAM tool"
-                }]
+                }],
+                "KmsKeyId": {
+                    "Fn::Sub": "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KMSKeyId}"
+                },
+                "Encrypted": true
             },
             "DeletionPolicy": "Snapshot"
         },
@@ -262,6 +265,5 @@
         }
 
     }
-
 
 }
