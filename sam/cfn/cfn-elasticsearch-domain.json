@@ -1,3 +1,4 @@
+```json
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Provisions Tailor ElasticSearch cluster",
@@ -44,7 +45,10 @@
                     }]
                 },
                 "AdvancedOptions": {
-                    "rest.action.multi.allow_explicit_index": "true"
+                    "rest.action.multi.allow_explicit_index": "true",
+                    "slow_log.threshold.query.warn": "5s",
+                    "slow_log.threshold.query.info": "2s",
+                    "slow_log.threshold.query.debug": "1s"
                 },
                 "EBSOptions": {
                     "EBSEnabled": true,
@@ -86,3 +90,4 @@
         }
     }
 }
+```
