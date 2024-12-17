@@ -183,7 +183,11 @@
                 }, {
                     "Key": "purpose",
                     "Value": "DB backend for NIPAP IPAM tool"
-                }]
+                }],
+                "MonitoringInterval": "60",
+                "EnhancedMonitoringResourceArn": {
+                    "Fn::GetAtt": ["RdsNipapDb", "Arn"]
+                }
             },
             "DeletionPolicy": "Snapshot"
         },
@@ -262,6 +266,4 @@
         }
 
     }
-
-
 }
