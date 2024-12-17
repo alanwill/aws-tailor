@@ -166,6 +166,7 @@
                     "Ref": "TailorNipapDbMasterPassword"
                 },
                 "MultiAZ": true,
+                "PubliclyAccessible": false,
                 "StorageType": "gp2",
                 "Tags": [{
                     "Key": "Name",
@@ -262,6 +263,4 @@
         }
 
     }
-
-
 }
