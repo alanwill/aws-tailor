@@ -205,13 +205,24 @@ Resources:
                     Effect: Allow
                     Action:
                         - dynamodb:DescribeTable
-                        - dynamodb:UpdateTable
                         - cloudwatch:PutMetricAlarm
                         - cloudwatch:DescribeAlarms
                         - cloudwatch:GetMetricStatistics
                         - cloudwatch:SetAlarmState
                         - cloudwatch:DeleteAlarms
                     Resource: "*"
+                    Condition:
+                        StringEquals:
+                            dynamodb:LeadingKeyElements: ["specific-table-name"]
+                -
+                    Effect: Allow
+                    Action:
+                        - dynamodb:UpdateTable
+                    Resource:
+                        - !GetAtt dynamodbTableAccountInfo.Arn
+                    Condition:
+                        StringEquals:
+                            dynamodb:TableName: "talr-accountInfo"
             Roles:
                 - !Ref dynamodbAutoscalingRole
 #########
@@ -259,157 +270,4 @@ Resources:
             MaxCapacity: 10
             MinCapacity: 1
             ResourceId: !Sub table/${dynamodbTableAccountInfo}/index/gsiAccountId
-            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
-            ScalableDimension: dynamodb:index:ReadCapacityUnits
-            ServiceNamespace: dynamodb
-    autoscaleTargetTableAccountInfoIndexGsiAccountIdWriteCapacity:
-        Type: AWS::ApplicationAutoScaling::ScalableTarget
-        Properties:
-            MaxCapacity: 10
-            MinCapacity: 1
-            ResourceId: !Sub table/${dynamodbTableAccountInfo}/index/gsiAccountId
-            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
-            ScalableDimension: dynamodb:index:WriteCapacityUnits
-            ServiceNamespace: dynamodb
-    scalingPolicyTableAccountInfoTableReadCapacity:
-        Type : AWS::ApplicationAutoScaling::ScalingPolicy
-        Properties:
-            PolicyName: ReadAutoScalingPolicy
-            PolicyType: TargetTrackingScaling
-            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoTableReadCapacity
-            TargetTrackingScalingPolicyConfiguration:
-                PredefinedMetricSpecification:
-                  PredefinedMetricType: DynamoDBReadCapacityUtilization
-                ScaleInCooldown: 60
-                ScaleOutCooldown: 60
-                TargetValue: 50.0
-    scalingPolicyTableAccountInfoTableWriteCapacity:
-        Type : AWS::ApplicationAutoScaling::ScalingPolicy
-        Properties:
-            PolicyName: WriteAutoScalingPolicy
-            PolicyType: TargetTrackingScaling
-            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoTableWriteCapacity
-            TargetTrackingScalingPolicyConfiguration:
-                PredefinedMetricSpecification:
-                  PredefinedMetricType: DynamoDBWriteCapacityUtilization
-                ScaleInCooldown: 60
-                ScaleOutCooldown: 60
-                TargetValue: 50.0
-    scalingPolicyTableAccountInfoGsiRequestIdWriteCapacity:
-        Type : AWS::ApplicationAutoScaling::ScalingPolicy
-        Properties:
-            PolicyName: WriteAutoScalingPolicyGsiRequestId
-            PolicyType: TargetTrackingScaling
-            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoIndexGsiRequestIdWriteCapacity
-            TargetTrackingScalingPolicyConfiguration:
-                PredefinedMetricSpecification:
-                  PredefinedMetricType: DynamoDBWriteCapacityUtilization
-                ScaleInCooldown: 60
-                ScaleOutCooldown: 60
-                TargetValue: 50.0
-    scalingPolicyTableAccountInfoGsiRequestIdReadCapacity:
-        Type : AWS::ApplicationAutoScaling::ScalingPolicy
-        Properties:
-            PolicyName: ReadAutoScalingPolicyGsiRequestId
-            PolicyType: TargetTrackingScaling
-            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoIndexGsiRequestIdReadCapacity
-            TargetTrackingScalingPolicyConfiguration:
-                PredefinedMetricSpecification:
-                  PredefinedMetricType: DynamoDBReadCapacityUtilization
-                ScaleInCooldown: 60
-                ScaleOutCooldown: 60
-                TargetValue: 50.0
-    scalingPolicyTableAccountInfoGsiAccountIdWriteCapacity:
-        Type : AWS::ApplicationAutoScaling::ScalingPolicy
-        Properties:
-            PolicyName: WriteAutoScalingPolicyGsiAccountId
-            PolicyType: TargetTrackingScaling
-            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoIndexGsiAccountIdWriteCapacity
-            TargetTrackingScalingPolicyConfiguration:
-                PredefinedMetricSpecification:
-                  PredefinedMetricType: DynamoDBWriteCapacityUtilization
-                ScaleInCooldown: 60
-                ScaleOutCooldown: 60
-                TargetValue: 50.0
-    scalingPolicyTableAccountInfoGsiAccountIdReadCapacity:
-        Type : AWS::ApplicationAutoScaling::ScalingPolicy
-        Properties:
-            PolicyName: ReadAutoScalingPolicyGsiAccountId
-            PolicyType: TargetTrackingScaling
-            ScalingTargetId: !Ref autoscaleTargetTableAccountInfoIndexGsiAccountIdReadCapacity
-            TargetTrackingScalingPolicyConfiguration:
-                PredefinedMetricSpecification:
-                  PredefinedMetricType: DynamoDBReadCapacityUtilization
-                ScaleInCooldown: 60
-                ScaleOutCooldown: 60
-                TargetValue: 50.0
-    autoscaleTargetTableTaskStatusTableReadCapacity:
-        Type: AWS::ApplicationAutoScaling::ScalableTarget
-        Properties:
-            MaxCapacity: 10
-            MinCapacity: 1
-            ResourceId: !Sub table/${dynamodbTableTaskStatus}
-            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
-            ScalableDimension: dynamodb:table:ReadCapacityUnits
-            ServiceNamespace: dynamodb
-    autoscaleTargetTableTaskStatusTableWriteCapacity:
-        Type: AWS::ApplicationAutoScaling::ScalableTarget
-        Properties:
-            MaxCapacity: 10
-            MinCapacity: 1
-            ResourceId: !Sub table/${dynamodbTableTaskStatus}
-            RoleARN: !GetAtt dynamodbAutoscalingRole.Arn
-            ScalableDimension: dynamodb:table:WriteCapacityUnits
-            ServiceNamespace: dynamodb
-    scalingPolicyTableTaskStatusTableReadCapacity:
-        Type : AWS::ApplicationAutoScaling::ScalingPolicy
-        Properties:
-            PolicyName: ReadAutoScalingPolicy
-            PolicyType: TargetTrackingScaling
-            ScalingTargetId: !Ref autoscaleTargetTableTaskStatusTableReadCapacity
-            TargetTrackingScalingPolicyConfiguration:
-                PredefinedMetricSpecification:
-                  PredefinedMetricType: DynamoDBReadCapacityUtilization
-                ScaleInCooldown: 60
-                ScaleOutCooldown: 60
-                TargetValue: 50.0
-    scalingPolicyTableTaskStatusTableWriteCapacity:
-        Type : AWS::ApplicationAutoScaling::ScalingPolicy
-        Properties:
-            PolicyName: WriteAutoScalingPolicy
-            PolicyType: TargetTrackingScaling
-            ScalingTargetId: !Ref autoscaleTargetTableTaskStatusTableWriteCapacity
-            TargetTrackingScalingPolicyConfiguration:
-                PredefinedMetricSpecification:
-                  PredefinedMetricType: DynamoDBWriteCapacityUtilization
-                ScaleInCooldown: 60
-                ScaleOutCooldown: 60
-                TargetValue: 50.0
-Outputs:
-    dynamodbTableNameTalrCbInfo:
-        Description: talr-cbInfo DynamoDB table name
-        Value: !Ref dynamodbTableCbInfo
-    dynamodbTableNameTalrAccountInfo:
-        Description: talr-accountInfo DynamoDB table name
-        Value: !Ref dynamodbTableAccountInfo
-    dynamodbTableNameTalrTaskStatus:
-        Description: talr-taskStatus DynamoDB table name
-        Value: !Ref dynamodbTableTaskStatus
-    dynamodbTableNameTalrNipapCfn:
-        Description: talr-nipapCfn DynamoDB table name
-        Value: !Ref dynamodbTableNipapCfn
-    dynamodbTableNameTalrOps:
-        Description: talr-ops DynamoDB table name
-        Value: !Ref dynamodbTableOps
-    dynamodbTableNameTalrClaStatus:
-        Description: talr-claStatus DynamoDB table name
-        Value: !Ref dynamodbTableClaStatus
-    dynamodbTableNameTalrConfigRulesCompliance:
-        Description: talr-configRulesCompliance DynamoDB table name
-        Value: !Ref dynamodbTableConfigRulesCompliance
-    dynamodbTableNameTalrDxInterface:
-        Description: talr-dxInterface DynamoDB table name
-        Value: !Ref dynamodbTableDxInterface
-    dynamodbStreamsTalrTaskStatus:
-        Description: talr-taskStatus DynamoDB stream name
-        Value: !GetAtt dynamodbTableTaskStatus.StreamArn
+            RoleARN: !
