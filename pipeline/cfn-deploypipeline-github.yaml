@@ -176,12 +176,16 @@ Resources:
                     Version: '2012-10-17'
                     Statement:
                         - Action:
-                            - 'iam:PassRole'
                             - 'lambda:InvokeFunction'
                             - 'lambda:ListFunctions'
-                            - 'lambda:InvokeAsyc'
+                            - 'lambda:InvokeAsync'
                           Effect: Allow
                           Resource: '*'
+                        - Action:
+                            - 'iam:PassRole'
+                          Effect: Allow
+                          Resource:
+                            - !GetAtt SomeSpecificRole.Arn
     Pipeline:
         Type: AWS::CodePipeline::Pipeline
         Properties:
@@ -264,67 +268,4 @@ Resources:
                                 Version: 1
                             Configuration:
                                 FunctionName: !Ref LambdaSlackNotify
-                            RunOrder: 1
-                -
-                    Name: Complete
-                    Actions:
-                        -
-                            Name: CompletionNotification
-                            ActionTypeId:
-                                Category: Invoke
-                                Owner: AWS
-                                Provider: Lambda
-                                Version: 1
-                            Configuration:
-                                FunctionName: !Ref LambdaSlackNotify
-    IamRoleLambdaSlackNotify:
-        Type: AWS::IAM::Role
-        Properties:
-            AssumeRolePolicyDocument:
-                Version: '2012-10-17'
-                Statement:
-                    -
-                        Effect: Allow
-                        Principal:
-                            Service:
-                                - lambda.amazonaws.com
-                        Action:
-                            - sts:AssumeRole
-            ManagedPolicyArns:
-                - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-            Path: "/"
-    IamPolicyLambdaSlackNotify1:
-        Type: AWS::IAM::Policy
-        Properties:
-            PolicyName: CodePipelineAccess
-            PolicyDocument:
-                Version: '2012-10-17'
-                Statement:
-                -
-                    Effect: Allow
-                    Action:
-                        - codepipeline:Get*
-                        - codepipeline:PutJob*
-                    Resource: "*"
-            Roles:
-                - Ref: IamRoleLambdaSlackNotify
-    LambdaSlackNotify:
-        Type: AWS::Serverless::Function
-        Properties:
-            Description: Sends CodePipeline events to Slack
-            Runtime: python2.7
-            CodeUri: ./functions/slack-notify
-            Handler: handler.handler
-            MemorySize: 128
-            Timeout: 30
-            Role: !GetAtt IamRoleLambdaSlackNotify.Arn
-            Environment:
-                Variables:
-                    SLACK_CHANNEL_NAME:
-                        !Ref SlackChannelName
-                    SLACK_WEBHOOK_URL:
-                        !Ref SlackWebhookUrl
-                    SERVICE_NAME:
-                        !Ref ServiceName
-                    STAGE:
-                        !Ref Stage
+                            RunOrder: 
