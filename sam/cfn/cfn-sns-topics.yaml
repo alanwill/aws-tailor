@@ -14,6 +14,7 @@ Resources:
     Properties:
       DisplayName: !Join [ "-", [ "talr-cla-request", !Ref stage ] ]
       TopicName: !Join [ "-", [ "talr-cla-request", !Ref stage ] ]
+      KmsMasterKeyId: !Ref YourKmsKeyArn  # Reference to the KMS key ARN
   snsTalrClaResponse:
     Type: AWS::SNS::Topic
     Properties:
