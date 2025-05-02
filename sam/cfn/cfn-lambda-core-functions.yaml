@@ -16,6 +16,7 @@ Resources:
             MemorySize: 128
             Timeout: 30
             Role: !GetAtt iamCoreFunctionsRolesStack.Outputs.iamRoleArnLambdaTalrReceptionist
+            ReservedConcurrentExecutions: 100  # Set your desired limit here
         Variables:
             TALR_TABLENAME_CBINFO: !GetAtt dynamodbTablesStack.Outputs.dynamodbTableNameTalrCbInfo
             TALR_TABLENAME_TASKSTATUS: !GetAtt dynamodbTablesStack.Outputs.dynamodbTableNameTalrTaskStatus
